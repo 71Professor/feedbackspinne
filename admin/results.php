@@ -538,7 +538,7 @@ if ($counts > 0) {
                 pdf.setFontSize(14);
                 pdf.setFont(undefined, 'bold');
                 const avgValue = averages[i].toLocaleString('de-DE', {minimumFractionDigits: 1, maximumFractionDigits: 1});
-                const avgText = '#  ' + avgValue;
+                const avgText = 'Ø  ' + avgValue;
                 const avgWidth = pdf.getTextWidth(avgText);
 
                 // Green badge
