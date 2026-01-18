@@ -9,23 +9,35 @@ if (isAdminLoggedIn()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    if ($username && $password) {
-        $pdo = getDB();
-        $stmt = $pdo->prepare("SELECT * FROM admin_users WHERE username = ?");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch();
-        
-        if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION[ADMIN_SESSION_NAME] = true;
-            $_SESSION['admin_id'] = $user['id'];
-            $_SESSION['admin_username'] = $user['username'];
-            header('Location: dashboard.php');
-            exit;
+    // CSRF-Token validieren (Schutz gegen Login CSRF)
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Ungültige Anfrage. Bitte lade die Seite neu und versuche es erneut.';
+    } else {
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+
+        if ($username && $password) {
+            $pdo = getDB();
+            $stmt = $pdo->prepare("SELECT * FROM admin_users WHERE username = ?");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch();
+
+            if ($user && password_verify($password, $user['password_hash'])) {
+                // Session-Regeneration (Schutz gegen Session Fixation)
+                session_regenerate_id(true);
+
+                $_SESSION[ADMIN_SESSION_NAME] = true;
+                $_SESSION['admin_id'] = $user['id'];
+                $_SESSION['admin_username'] = $user['username'];
+                $_SESSION['last_activity'] = time(); // Für Session-Timeout
+
+                header('Location: dashboard.php');
+                exit;
+            } else {
+                $error = 'Ungültige Anmeldedaten.';
+            }
         } else {
-            $error = 'Ungültige Anmeldedaten.';
+            $error = 'Bitte fülle alle Felder aus.';
         }
     }
 }
