@@ -9,23 +9,46 @@ if (isAdminLoggedIn()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    if ($username && $password) {
-        $pdo = getDB();
-        $stmt = $pdo->prepare("SELECT * FROM admin_users WHERE username = ?");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch();
-        
-        if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION[ADMIN_SESSION_NAME] = true;
-            $_SESSION['admin_id'] = $user['id'];
-            $_SESSION['admin_username'] = $user['username'];
-            header('Location: dashboard.php');
-            exit;
+    // Rate Limiting prüfen (Schutz gegen Brute-Force)
+    if (!checkRateLimit('admin_login', 5, 900)) {
+        $remaining = getRateLimitTimeRemaining('admin_login');
+        $minutes = ceil($remaining / 60);
+        $error = "Zu viele fehlgeschlagene Login-Versuche. Bitte warte {$minutes} Minute(n) und versuche es erneut.";
+    }
+    // CSRF-Token validieren (Schutz gegen Login CSRF)
+    elseif (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = 'Ungültige Anfrage. Bitte lade die Seite neu und versuche es erneut.';
+    } else {
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+
+        if ($username && $password) {
+            $pdo = getDB();
+            $stmt = $pdo->prepare("SELECT * FROM admin_users WHERE username = ?");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch();
+
+            if ($user && password_verify($password, $user['password_hash'])) {
+                // Login erfolgreich: Rate Limit zurücksetzen
+                resetRateLimit('admin_login');
+
+                // Session-Regeneration (Schutz gegen Session Fixation)
+                session_regenerate_id(true);
+
+                $_SESSION[ADMIN_SESSION_NAME] = true;
+                $_SESSION['admin_id'] = $user['id'];
+                $_SESSION['admin_username'] = $user['username'];
+                $_SESSION['last_activity'] = time(); // Für Session-Timeout
+
+                header('Location: dashboard.php');
+                exit;
+            } else {
+                // Login fehlgeschlagen: Rate Limit erhöhen
+                incrementRateLimit('admin_login');
+                $error = 'Ungültige Anmeldedaten.';
+            }
         } else {
-            $error = 'Ungültige Anmeldedaten.';
+            $error = 'Bitte fülle alle Felder aus.';
         }
     }
 }

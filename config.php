@@ -111,6 +111,93 @@ function validateCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+/**
+ * Rate Limiting - Schutz gegen Brute-Force-Angriffe
+ *
+ * @param string $key Eindeutiger Key (z.B. 'login_attempt', 'session_code')
+ * @param int $maxAttempts Maximale Versuche im Zeitfenster (default: 5)
+ * @param int $timeWindow Zeitfenster in Sekunden (default: 900 = 15 Min)
+ * @return bool True wenn erlaubt, False wenn Rate Limit überschritten
+ */
+function checkRateLimit($key, $maxAttempts = 5, $timeWindow = 900) {
+    $rateLimitKey = 'rate_limit_' . $key;
+    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $fullKey = $rateLimitKey . '_' . md5($clientIP); // IP-basiert
+
+    if (!isset($_SESSION[$fullKey])) {
+        $_SESSION[$fullKey] = [
+            'count' => 0,
+            'first_attempt' => time(),
+            'blocked_until' => null
+        ];
+    }
+
+    $data = &$_SESSION[$fullKey];
+
+    // Prüfen ob noch geblockt
+    if ($data['blocked_until'] && time() < $data['blocked_until']) {
+        return false;
+    }
+
+    // Zeitfenster abgelaufen? Zurücksetzen
+    if (time() - $data['first_attempt'] > $timeWindow) {
+        $data['count'] = 0;
+        $data['first_attempt'] = time();
+        $data['blocked_until'] = null;
+    }
+
+    // Limit erreicht?
+    if ($data['count'] >= $maxAttempts) {
+        // Progressive Blockierung: Je mehr Versuche, desto länger gesperrt
+        $blockDuration = min(3600, $timeWindow * (1 + floor($data['count'] / $maxAttempts)));
+        $data['blocked_until'] = time() + $blockDuration;
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Rate Limit Counter erhöhen (nach fehlgeschlagenem Versuch)
+ */
+function incrementRateLimit($key) {
+    $rateLimitKey = 'rate_limit_' . $key;
+    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $fullKey = $rateLimitKey . '_' . md5($clientIP);
+
+    if (isset($_SESSION[$fullKey])) {
+        $_SESSION[$fullKey]['count']++;
+    }
+}
+
+/**
+ * Rate Limit zurücksetzen (nach erfolgreichem Versuch)
+ */
+function resetRateLimit($key) {
+    $rateLimitKey = 'rate_limit_' . $key;
+    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $fullKey = $rateLimitKey . '_' . md5($clientIP);
+
+    unset($_SESSION[$fullKey]);
+}
+
+/**
+ * Verbleibende Zeit bis Rate Limit zurückgesetzt wird
+ * @return int Sekunden bis Reset (0 wenn nicht geblockt)
+ */
+function getRateLimitTimeRemaining($key) {
+    $rateLimitKey = 'rate_limit_' . $key;
+    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $fullKey = $rateLimitKey . '_' . md5($clientIP);
+
+    if (isset($_SESSION[$fullKey]['blocked_until'])) {
+        $remaining = $_SESSION[$fullKey]['blocked_until'] - time();
+        return max(0, $remaining);
+    }
+
+    return 0;
+}
+
 // 4-stelligen Code generieren
 function generateSessionCode() {
     $pdo = getDB();
