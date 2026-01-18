@@ -42,10 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $pdo = getDB();
                     $code = generateSessionCode();
-                    
+
                     $stmt = $pdo->prepare("
-                        INSERT INTO sessions (code, title, description, scale_min, scale_max, dimensions, is_active)
-                        VALUES (?, ?, ?, ?, ?, ?, 1)
+                        INSERT INTO sessions (code, title, description, scale_min, scale_max, dimensions, is_active, created_by_admin_id)
+                        VALUES (?, ?, ?, ?, ?, ?, 1, ?)
                     ");
                     $stmt->execute([
                         $code,
@@ -53,9 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $description,
                         $scaleMin,
                         $scaleMax,
-                        json_encode($dimensions, JSON_UNESCAPED_UNICODE)
+                        json_encode($dimensions, JSON_UNESCAPED_UNICODE),
+                        $_SESSION['admin_id']
                     ]);
-                    
+
                     $success = true;
                     $generatedCode = $code;
                 } catch (Exception $e) {

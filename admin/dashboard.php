@@ -2,37 +2,39 @@
 require_once '../config.php';
 requireAdmin();
 
-// Sessions abrufen
+// Sessions abrufen (nur eigene Sessions)
 $pdo = getDB();
-$stmt = $pdo->query("
-    SELECT 
+$stmt = $pdo->prepare("
+    SELECT
         s.*,
         COUNT(sub.id) as submission_count
     FROM sessions s
     LEFT JOIN submissions sub ON s.id = sub.session_id
+    WHERE s.created_by_admin_id = ?
     GROUP BY s.id
     ORDER BY s.created_at DESC
 ");
+$stmt->execute([$_SESSION['admin_id']]);
 $sessions = $stmt->fetchAll();
 
-// Session löschen
+// Session löschen (nur eigene Sessions)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_session'])) {
     if (validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $sessionId = $_POST['session_id'] ?? 0;
-        $stmt = $pdo->prepare("DELETE FROM sessions WHERE id = ?");
-        $stmt->execute([$sessionId]);
+        $stmt = $pdo->prepare("DELETE FROM sessions WHERE id = ? AND created_by_admin_id = ?");
+        $stmt->execute([$sessionId, $_SESSION['admin_id']]);
         header('Location: dashboard.php');
         exit;
     }
 }
 
-// Session aktivieren/deaktivieren
+// Session aktivieren/deaktivieren (nur eigene Sessions)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_active'])) {
     if (validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $sessionId = $_POST['session_id'] ?? 0;
         $isActive = $_POST['is_active'] ?? 0;
-        $stmt = $pdo->prepare("UPDATE sessions SET is_active = ? WHERE id = ?");
-        $stmt->execute([$isActive, $sessionId]);
+        $stmt = $pdo->prepare("UPDATE sessions SET is_active = ? WHERE id = ? AND created_by_admin_id = ?");
+        $stmt->execute([$isActive, $sessionId, $_SESSION['admin_id']]);
         header('Location: dashboard.php');
         exit;
     }
