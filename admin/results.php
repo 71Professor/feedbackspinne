@@ -383,8 +383,89 @@ if ($counts > 0) {
         });
 
         async function exportPNG() {
-            const canvas = resultsChart.canvas;
-            const url = canvas.toDataURL('image/png');
+            const chartCanvas = resultsChart.canvas;
+            const dimensionsData = <?php echo json_encode($dimensions); ?>;
+            const scaleMaxVal = <?php echo $session['scale_max']; ?>;
+
+            // Create a composite canvas with chart and averages
+            const compositeCanvas = document.createElement('canvas');
+            const padding = 40;
+            const chartWidth = chartCanvas.width;
+            const chartHeight = chartCanvas.height;
+            const tableWidth = 500;
+            const rowHeight = 90;
+            const headerHeight = 60;
+            const titleHeight = 120;
+
+            compositeCanvas.width = chartWidth + tableWidth + padding * 3;
+            compositeCanvas.height = Math.max(chartHeight, dimensionsData.length * rowHeight + headerHeight) + titleHeight + padding * 2;
+
+            const ctx = compositeCanvas.getContext('2d');
+
+            // White background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+
+            // Title
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText('<?php echo addslashes($session['title']); ?>', padding, padding + 35);
+
+            // Subtitle
+            ctx.fillStyle = '#64748b';
+            ctx.font = '20px sans-serif';
+            ctx.fillText('Durchschnittswerte von <?php echo $counts; ?> Teilnehmer<?php echo $counts !== 1 ? 'n' : ''; ?>', padding, padding + 70);
+
+            // Draw chart
+            ctx.drawImage(chartCanvas, padding, titleHeight + padding, chartWidth, chartHeight);
+
+            // Draw averages table
+            let tableX = chartWidth + padding * 2;
+            let tableY = titleHeight + padding;
+
+            // Table header
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText('Durchschnittswerte', tableX, tableY + 30);
+            tableY += headerHeight;
+
+            // Draw each dimension
+            dimensionsData.forEach((dim, i) => {
+                // Dimension name
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillText(dim.name, tableX, tableY + 20);
+
+                // Average badge background
+                const avgText = '⌀ ' + averages[i].toLocaleString('de-DE', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+                ctx.font = 'bold 24px sans-serif';
+                const avgWidth = ctx.measureText(avgText).width;
+
+                ctx.fillStyle = '#7ab800';
+                ctx.beginPath();
+                ctx.roundRect(tableX, tableY + 30, avgWidth + 24, 36, 18);
+                ctx.fill();
+
+                // Average text
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(avgText, tableX + 12, tableY + 55);
+
+                // "von X" text
+                ctx.fillStyle = '#64748b';
+                ctx.font = '18px sans-serif';
+                ctx.fillText('von ' + scaleMaxVal, tableX + avgWidth + 36, tableY + 55);
+
+                // Pole labels
+                ctx.fillStyle = '#64748b';
+                ctx.font = '14px sans-serif';
+                const poleText = dim.left + ' — ' + dim.right;
+                ctx.fillText(poleText, tableX, tableY + 78);
+
+                tableY += rowHeight;
+            });
+
+            // Download
+            const url = compositeCanvas.toDataURL('image/png');
             const a = document.createElement('a');
             a.href = url;
             a.download = 'ergebnisse-<?php echo $session['code']; ?>.png';
@@ -396,26 +477,77 @@ if ($counts > 0) {
             const imgData = canvas.toDataURL('image/png');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-            
+
             const pageW = pdf.internal.pageSize.getWidth();
             const pageH = pdf.internal.pageSize.getHeight();
-            
+
             // Titel
             pdf.setFontSize(18);
             pdf.text('<?php echo addslashes($session['title']); ?>', 40, 40);
             pdf.setFontSize(12);
             pdf.text('Durchschnittswerte von <?php echo $counts; ?> Teilnehmer<?php echo $counts !== 1 ? 'n' : ''; ?>', 40, 60);
-            
+
             // Chart
             const imgW = canvas.width;
             const imgH = canvas.height;
-            const ratio = Math.min((pageW - 80) / imgW, (pageH - 150) / imgH);
+            const ratio = Math.min((pageW - 80) / imgW, 350 / imgH);
             const w = imgW * ratio;
             const h = imgH * ratio;
             const x = (pageW - w) / 2;
             const y = 80;
-            
+
             pdf.addImage(imgData, 'PNG', x, y, w, h);
+
+            // Durchschnittswerte Tabelle
+            let tableY = y + h + 30;
+
+            pdf.setFontSize(14);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('Durchschnittswerte', 40, tableY);
+            tableY += 20;
+
+            const dimensionsData = <?php echo json_encode($dimensions); ?>;
+            const scaleMaxVal = <?php echo $session['scale_max']; ?>;
+
+            pdf.setFontSize(10);
+            dimensionsData.forEach((dim, i) => {
+                // Check if we need a new page
+                if (tableY > pageH - 80) {
+                    pdf.addPage();
+                    tableY = 40;
+                }
+
+                // Dimension name (bold)
+                pdf.setFont(undefined, 'bold');
+                pdf.text(dim.name, 40, tableY);
+
+                // Average value with colored background
+                pdf.setFont(undefined, 'bold');
+                const avgText = '⌀ ' + averages[i].toLocaleString('de-DE', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+                const avgWidth = pdf.getTextWidth(avgText);
+                pdf.setFillColor(122, 184, 0);
+                pdf.roundedRect(40, tableY + 5, avgWidth + 12, 18, 3, 3, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.text(avgText, 46, tableY + 17);
+
+                // "von X" text
+                pdf.setTextColor(100, 116, 139);
+                pdf.setFont(undefined, 'normal');
+                pdf.text('von ' + scaleMaxVal, 46 + avgWidth + 18, tableY + 17);
+
+                // Pole labels (left and right)
+                pdf.setTextColor(100, 116, 139);
+                pdf.setFontSize(9);
+                const poleText = dim.left + ' — ' + dim.right;
+                pdf.text(poleText, 40, tableY + 30);
+
+                // Reset text color
+                pdf.setTextColor(0, 0, 0);
+                pdf.setFontSize(10);
+
+                tableY += 45;
+            });
+
             pdf.save('ergebnisse-<?php echo $session['code']; ?>.pdf');
         }
         <?php endif; ?>
