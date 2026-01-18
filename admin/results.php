@@ -24,6 +24,29 @@ if (!$session) {
 }
 
 $dimensions = json_decode($session['dimensions'], true);
+$chartColor = $session['chart_color'] ?? '#7ab800';
+
+// Farbe für CSS-Variablen konvertieren (RGB)
+function hexToRgb($hex) {
+    $hex = ltrim($hex, '#');
+    return [
+        'r' => hexdec(substr($hex, 0, 2)),
+        'g' => hexdec(substr($hex, 2, 2)),
+        'b' => hexdec(substr($hex, 4, 2))
+    ];
+}
+
+// Dunklere Farbe für Hover-Effekte (ca. 20% dunkler)
+function darkenColor($hex, $percent = 20) {
+    $rgb = hexToRgb($hex);
+    $r = max(0, min(255, $rgb['r'] * (100 - $percent) / 100));
+    $g = max(0, min(255, $rgb['g'] * (100 - $percent) / 100));
+    $b = max(0, min(255, $rgb['b'] * (100 - $percent) / 100));
+    return sprintf("#%02x%02x%02x", $r, $g, $b);
+}
+
+$rgb = hexToRgb($chartColor);
+$chartColorDark = darkenColor($chartColor);
 
 // Alle Submissions für diese Session abrufen
 $stmt = $pdo->prepare("
@@ -65,8 +88,8 @@ if ($counts > 0) {
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <style>
         :root {
-            --green: #7ab800;
-            --green-2: #5e9800;
+            --green: <?php echo $chartColor; ?>;
+            --green-2: <?php echo $chartColorDark; ?>;
             --text: #0f172a;
             --muted: #64748b;
             --border: #e5e7eb;
@@ -140,12 +163,12 @@ if ($counts > 0) {
             font-size: 14px;
         }
         .meta-value {
-            background: rgba(122,184,0,.12);
-            border: 1px solid rgba(122,184,0,.28);
+            background: rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.12);
+            border: 1px solid rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.28);
             padding: 4px 10px;
             border-radius: 999px;
             font-weight: 700;
-            color: #0b2a00;
+            color: var(--text);
         }
         .grid {
             display: grid;
@@ -340,10 +363,10 @@ if ($counts > 0) {
                 datasets: [{
                     label: 'Durchschnitt',
                     data: averages,
-                    backgroundColor: 'rgba(122,184,0,.18)',
-                    borderColor: '#7ab800',
+                    backgroundColor: 'rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.18)',
+                    borderColor: '<?php echo $chartColor; ?>',
                     borderWidth: 3,
-                    pointBackgroundColor: '#7ab800',
+                    pointBackgroundColor: '<?php echo $chartColor; ?>',
                     pointBorderColor: '#ffffff',
                     pointBorderWidth: 2.5,
                     pointRadius: 6,
@@ -442,7 +465,7 @@ if ($counts > 0) {
                 ctx.font = 'bold 24px sans-serif';
                 const avgWidth = ctx.measureText(avgText).width;
 
-                ctx.fillStyle = '#7ab800';
+                ctx.fillStyle = '<?php echo $chartColor; ?>';
                 ctx.beginPath();
                 ctx.roundRect(tableX, tableY + 30, avgWidth + 24, 36, 18);
                 ctx.fill();
@@ -543,7 +566,7 @@ if ($counts > 0) {
                 const avgWidth = pdf.getTextWidth(avgText);
 
                 // Green badge
-                pdf.setFillColor(122, 184, 0);
+                pdf.setFillColor(<?php echo "{$rgb['r']}, {$rgb['g']}, {$rgb['b']}"; ?>);
                 pdf.roundedRect(40, tableY - 13, avgWidth + 16, 22, 4, 4, 'F');
                 pdf.setTextColor(255, 255, 255);
                 pdf.text(avgText, 48, tableY + 2);

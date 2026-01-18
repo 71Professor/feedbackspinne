@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $scaleMin = (int)($_POST['scale_min'] ?? 1);
         $scaleMax = (int)($_POST['scale_max'] ?? 10);
+        $chartColor = trim($_POST['chart_color'] ?? '#7ab800');
         $dimensionNames = $_POST['dimension_names'] ?? [];
         $dimensionLefts = $_POST['dimension_lefts'] ?? [];
         $dimensionRights = $_POST['dimension_rights'] ?? [];
@@ -44,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $code = generateSessionCode();
 
                     $stmt = $pdo->prepare("
-                        INSERT INTO sessions (code, title, description, scale_min, scale_max, dimensions, is_active, created_by_admin_id)
-                        VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+                        INSERT INTO sessions (code, title, description, scale_min, scale_max, chart_color, dimensions, is_active, created_by_admin_id)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
                     ");
                     $stmt->execute([
                         $code,
@@ -53,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $description,
                         $scaleMin,
                         $scaleMax,
+                        $chartColor,
                         json_encode($dimensions, JSON_UNESCAPED_UNICODE),
                         $_SESSION['admin_id']
                     ]);
@@ -266,6 +268,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 10px;
             margin-bottom: 20px;
         }
+        .color-picker-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .color-picker-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .color-preview {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            border: 3px solid white;
+            box-shadow: 0 0 0 1px var(--border), 0 4px 12px rgba(15,23,42,.1);
+        }
+        .color-label {
+            font-size: 14px;
+            color: var(--muted);
+        }
+        .color-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .color-option {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(15,23,42,.1);
+        }
+        .color-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(15,23,42,.2);
+        }
+        .color-option.selected {
+            border-color: #0f172a;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #0f172a;
+        }
     </style>
 </head>
 <body>
@@ -321,7 +366,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label>Diagrammfarbe</label>
+                        <div class="color-picker-wrapper">
+                            <div class="color-picker-display">
+                                <div class="color-preview" id="colorPreview" style="background-color: #7ab800;"></div>
+                                <span class="color-label" id="colorLabel">#7ab800</span>
+                            </div>
+                            <div class="color-options">
+                                <div class="color-option selected" style="background-color: #7ab800;" data-color="#7ab800" title="Grün"></div>
+                                <div class="color-option" style="background-color: #3B82F6;" data-color="#3B82F6" title="Blau"></div>
+                                <div class="color-option" style="background-color: #A855F7;" data-color="#A855F7" title="Lila"></div>
+                                <div class="color-option" style="background-color: #EF4444;" data-color="#EF4444" title="Rot"></div>
+                                <div class="color-option" style="background-color: #F97316;" data-color="#F97316" title="Orange"></div>
+                                <div class="color-option" style="background-color: #22C55E;" data-color="#22C55E" title="Hellgrün"></div>
+                                <div class="color-option" style="background-color: #EC4899;" data-color="#EC4899" title="Pink"></div>
+                                <div class="color-option" style="background-color: #06B6D4;" data-color="#06B6D4" title="Cyan"></div>
+                            </div>
+                            <input type="hidden" name="chart_color" id="chartColorInput" value="#7ab800">
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>Dimensionen (mindestens 3)</label>
                         <div id="dimensions">
@@ -378,6 +444,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         addDimension('Datenschutzkonformität', 'unklar/unsicher', 'vollständig gewährleistet');
         addDimension('Zeitersparnis', 'keine Ersparnis', 'erhebliche Ersparnis');
         addDimension('Benutzerfreundlichkeit', 'kompliziert', 'intuitiv bedienbar');
+
+        // Farbpicker-Funktionalität
+        const colorOptions = document.querySelectorAll('.color-option');
+        const colorPreview = document.getElementById('colorPreview');
+        const colorLabel = document.getElementById('colorLabel');
+        const chartColorInput = document.getElementById('chartColorInput');
+
+        colorOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // Entferne "selected" von allen Optionen
+                colorOptions.forEach(opt => opt.classList.remove('selected'));
+
+                // Füge "selected" zur geklickten Option hinzu
+                this.classList.add('selected');
+
+                // Aktualisiere die Vorschau und das Input-Feld
+                const color = this.getAttribute('data-color');
+                colorPreview.style.backgroundColor = color;
+                colorLabel.textContent = color;
+                chartColorInput.value = color;
+            });
+        });
     </script>
 </body>
 </html>
