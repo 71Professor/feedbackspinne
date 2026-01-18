@@ -19,7 +19,7 @@ define('SESSION_TIMEOUT', 3600); // 1 Stunde
 define('SECURE_KEY', '6g4uJ$bCA^o)nZb;!>6-H=yYbFA(QH[-'); // Ändere dies zu einem zufälligen String
 
 // Fehlerberichterstattung (auf false in Produktion)
-define('DEBUG_MODE', true);
+define('DEBUG_MODE', false);
 
 if (DEBUG_MODE) {
     error_reporting(E_ALL);
