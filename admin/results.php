@@ -482,70 +482,89 @@ if ($counts > 0) {
             const pageH = pdf.internal.pageSize.getHeight();
 
             // Titel
-            pdf.setFontSize(18);
-            pdf.text('<?php echo addslashes($session['title']); ?>', 40, 40);
+            pdf.setFontSize(20);
+            pdf.setFont(undefined, 'bold');
+            pdf.setTextColor(15, 23, 42);
+            pdf.text('<?php echo addslashes($session['title']); ?>', 40, 45);
+
             pdf.setFontSize(12);
-            pdf.text('Durchschnittswerte von <?php echo $counts; ?> Teilnehmer<?php echo $counts !== 1 ? 'n' : ''; ?>', 40, 60);
+            pdf.setFont(undefined, 'normal');
+            pdf.setTextColor(100, 116, 139);
+            pdf.text('Durchschnittswerte von <?php echo $counts; ?> Teilnehmer<?php echo $counts !== 1 ? 'n' : ''; ?>', 40, 65);
 
             // Chart
             const imgW = canvas.width;
             const imgH = canvas.height;
-            const ratio = Math.min((pageW - 80) / imgW, 350 / imgH);
+            const ratio = Math.min((pageW - 80) / imgW, 320 / imgH);
             const w = imgW * ratio;
             const h = imgH * ratio;
             const x = (pageW - w) / 2;
-            const y = 80;
+            const y = 85;
 
             pdf.addImage(imgData, 'PNG', x, y, w, h);
 
             // Durchschnittswerte Tabelle
-            let tableY = y + h + 30;
+            let tableY = y + h + 35;
 
-            pdf.setFontSize(14);
+            pdf.setFontSize(16);
             pdf.setFont(undefined, 'bold');
+            pdf.setTextColor(15, 23, 42);
             pdf.text('Durchschnittswerte', 40, tableY);
-            tableY += 20;
+            tableY += 25;
 
             const dimensionsData = <?php echo json_encode($dimensions); ?>;
             const scaleMaxVal = <?php echo $session['scale_max']; ?>;
 
-            pdf.setFontSize(10);
             dimensionsData.forEach((dim, i) => {
                 // Check if we need a new page
-                if (tableY > pageH - 80) {
+                if (tableY > pageH - 100) {
                     pdf.addPage();
-                    tableY = 40;
+                    tableY = 50;
+                    pdf.setFontSize(16);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.setTextColor(15, 23, 42);
+                    pdf.text('Durchschnittswerte (Fortsetzung)', 40, tableY);
+                    tableY += 25;
                 }
 
                 // Dimension name (bold)
+                pdf.setFontSize(11);
                 pdf.setFont(undefined, 'bold');
+                pdf.setTextColor(15, 23, 42);
                 pdf.text(dim.name, 40, tableY);
+                tableY += 15;
 
                 // Average value with colored background
+                pdf.setFontSize(14);
                 pdf.setFont(undefined, 'bold');
-                const avgText = '⌀ ' + averages[i].toLocaleString('de-DE', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+                const avgValue = averages[i].toLocaleString('de-DE', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+                const avgText = '#  ' + avgValue;
                 const avgWidth = pdf.getTextWidth(avgText);
+
+                // Green badge
                 pdf.setFillColor(122, 184, 0);
-                pdf.roundedRect(40, tableY + 5, avgWidth + 12, 18, 3, 3, 'F');
+                pdf.roundedRect(40, tableY - 13, avgWidth + 16, 22, 4, 4, 'F');
                 pdf.setTextColor(255, 255, 255);
-                pdf.text(avgText, 46, tableY + 17);
+                pdf.text(avgText, 48, tableY + 2);
 
                 // "von X" text
                 pdf.setTextColor(100, 116, 139);
                 pdf.setFont(undefined, 'normal');
-                pdf.text('von ' + scaleMaxVal, 46 + avgWidth + 18, tableY + 17);
+                pdf.setFontSize(11);
+                pdf.text('von ' + scaleMaxVal, 48 + avgWidth + 24, tableY + 1);
+
+                tableY += 18;
 
                 // Pole labels (left and right)
                 pdf.setTextColor(100, 116, 139);
                 pdf.setFontSize(9);
+                pdf.setFont(undefined, 'normal');
                 const poleText = dim.left + ' — ' + dim.right;
-                pdf.text(poleText, 40, tableY + 30);
+                pdf.text(poleText, 40, tableY);
 
-                // Reset text color
-                pdf.setTextColor(0, 0, 0);
-                pdf.setFontSize(10);
-
-                tableY += 45;
+                // Reset and add spacing
+                pdf.setTextColor(15, 23, 42);
+                tableY += 22;
             });
 
             pdf.save('ergebnisse-<?php echo $session['code']; ?>.pdf');
