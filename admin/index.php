@@ -165,13 +165,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <button type="submit">Anmelden</button>
             </form>
-            
+
             <div class="info">
-                <strong>Standard-Login:</strong><br>
-                Benutzername: admin<br>
-                Passwort: admin123<br>
-                <br>
-                <em>⚠️ Bitte ändere das Passwort nach dem ersten Login!</em>
+                <strong>ℹ️ Hinweis:</strong><br>
+                Für den ersten Login siehe SETUP.md im Projektverzeichnis.
             </div>
         </div>
     </div>
