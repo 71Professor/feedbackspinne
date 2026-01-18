@@ -21,6 +21,29 @@ if (!$session) {
 }
 
 $dimensions = json_decode($session['dimensions'], true);
+$chartColor = $session['chart_color'] ?? '#7ab800';
+
+// Farbe für CSS-Variablen konvertieren (RGB)
+function hexToRgb($hex) {
+    $hex = ltrim($hex, '#');
+    return [
+        'r' => hexdec(substr($hex, 0, 2)),
+        'g' => hexdec(substr($hex, 2, 2)),
+        'b' => hexdec(substr($hex, 4, 2))
+    ];
+}
+
+// Dunklere Farbe für Hover-Effekte (ca. 20% dunkler)
+function darkenColor($hex, $percent = 20) {
+    $rgb = hexToRgb($hex);
+    $r = max(0, min(255, $rgb['r'] * (100 - $percent) / 100));
+    $g = max(0, min(255, $rgb['g'] * (100 - $percent) / 100));
+    $b = max(0, min(255, $rgb['b'] * (100 - $percent) / 100));
+    return sprintf("#%02x%02x%02x", $r, $g, $b);
+}
+
+$rgb = hexToRgb($chartColor);
+$chartColorDark = darkenColor($chartColor);
 
 // Anzahl bisheriger Teilnehmer
 $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM submissions WHERE session_id = ?");
@@ -71,8 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --green: #7ab800;
-            --green-2: #5e9800;
+            --green: <?php echo $chartColor; ?>;
+            --green-2: <?php echo $chartColorDark; ?>;
             --bg: #ffffff;
             --text: #0f172a;
             --muted: #64748b;
@@ -126,12 +149,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
             color: var(--muted);
         }
         .info-badge {
-            background: rgba(122,184,0,.12);
-            border: 1px solid rgba(122,184,0,.28);
+            background: rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.12);
+            border: 1px solid rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.28);
             padding: 4px 10px;
             border-radius: 999px;
             font-weight: 700;
-            color: #0b2a00;
+            color: var(--text);
         }
         .card {
             background: var(--card);
@@ -159,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
         }
         input[type="text"]:focus {
             border-color: var(--green);
-            box-shadow: 0 0 0 3px rgba(122,184,0,.18);
+            box-shadow: 0 0 0 3px rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.18);
         }
         .dimension {
             border: 1px solid var(--border);
@@ -188,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
             position: relative;
             width: 100%;
             height: 6px;
-            background: rgba(122,184,0,.22);
+            background: rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.22);
             border-radius: 999px;
         }
         input[type="range"] {
@@ -399,10 +422,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
                 labels: dimensions.map(d => d.name),
                 datasets: [{
                     data: Array(dimensions.length).fill(Math.floor((scaleMin + scaleMax) / 2)),
-                    backgroundColor: 'rgba(122,184,0,.18)',
-                    borderColor: '#7ab800',
+                    backgroundColor: 'rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.18)',
+                    borderColor: '<?php echo $chartColor; ?>',
                     borderWidth: 3,
-                    pointBackgroundColor: '#7ab800',
+                    pointBackgroundColor: '<?php echo $chartColor; ?>',
                     pointBorderColor: '#ffffff',
                     pointBorderWidth: 2.5,
                     pointRadius: 6,
