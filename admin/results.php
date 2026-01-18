@@ -7,17 +7,18 @@ $code = $_GET['code'] ?? '';
 
 $pdo = getDB();
 
-// Session finden (entweder per ID oder Code)
+// Session finden (entweder per ID oder Code) - nur eigene Sessions
 if ($sessionId) {
-    $stmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ?");
-    $stmt->execute([$sessionId]);
+    $stmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ? AND created_by_admin_id = ?");
+    $stmt->execute([$sessionId, $_SESSION['admin_id']]);
 } else {
-    $stmt = $pdo->prepare("SELECT * FROM sessions WHERE code = ?");
-    $stmt->execute([$code]);
+    $stmt = $pdo->prepare("SELECT * FROM sessions WHERE code = ? AND created_by_admin_id = ?");
+    $stmt->execute([$code, $_SESSION['admin_id']]);
 }
 $session = $stmt->fetch();
 
 if (!$session) {
+    // Session nicht gefunden oder gehört nicht dem aktuellen User
     header('Location: dashboard.php');
     exit;
 }
