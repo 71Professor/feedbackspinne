@@ -17,6 +17,16 @@ $stmt = $pdo->prepare("
 $stmt->execute([$_SESSION['admin_id']]);
 $sessions = $stmt->fetchAll();
 
+// Farbe für CSS-Variablen konvertieren (RGB)
+function hexToRgb($hex) {
+    $hex = ltrim($hex, '#');
+    return [
+        'r' => hexdec(substr($hex, 0, 2)),
+        'g' => hexdec(substr($hex, 2, 2)),
+        'b' => hexdec(substr($hex, 4, 2))
+    ];
+}
+
 // Session löschen (nur eigene Sessions)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_session'])) {
     if (validateCSRFToken($_POST['csrf_token'] ?? '')) {
@@ -144,13 +154,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_active'])) {
             margin-bottom: 12px;
         }
         .session-code {
-            background: rgba(122,184,0,.12);
-            border: 1px solid rgba(122,184,0,.28);
             padding: 6px 14px;
             border-radius: 999px;
             font-weight: 800;
             font-size: 18px;
-            color: #0b2a00;
             letter-spacing: 2px;
         }
         .session-status {
@@ -186,6 +193,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_active'])) {
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
             margin-bottom: 16px;
+        }
+        .color-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px rgba(15,23,42,.1), 0 2px 4px rgba(15,23,42,.1);
         }
         .meta-item {
             font-size: 13px;
@@ -251,10 +270,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_active'])) {
             </div>
         <?php else: ?>
             <div class="sessions-grid">
-                <?php foreach ($sessions as $session): ?>
+                <?php foreach ($sessions as $session):
+                    $chartColor = $session['chart_color'] ?? '#7ab800';
+                    $rgb = hexToRgb($chartColor);
+                ?>
                     <div class="session-card <?php echo $session['is_active'] ? '' : 'inactive'; ?>">
                         <div class="session-header">
-                            <div class="session-code"><?php echo htmlspecialchars($session['code']); ?></div>
+                            <div class="session-code" style="background: rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.12); border: 1px solid rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.28); color: var(--text);">
+                                <?php echo htmlspecialchars($session['code']); ?>
+                            </div>
                             <span class="session-status <?php echo $session['is_active'] ? 'status-active' : 'status-inactive'; ?>">
                                 <?php echo $session['is_active'] ? 'Aktiv' : 'Inaktiv'; ?>
                             </span>
@@ -280,10 +304,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_active'])) {
                                 <span class="meta-label">Skala</span>
                                 <span class="meta-value"><?php echo $session['scale_min']; ?>-<?php echo $session['scale_max']; ?></span>
                             </div>
+                            <div class="meta-item" style="grid-column: span 2;">
+                                <span class="meta-label">Diagrammfarbe</span>
+                                <div class="color-indicator">
+                                    <div class="color-dot" style="background-color: <?php echo $chartColor; ?>;"></div>
+                                    <span class="meta-value"><?php echo $chartColor; ?></span>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="session-actions">
-                            <a href="results.php?id=<?php echo $session['id']; ?>" class="btn btn-primary btn-small">
+                            <a href="results.php?id=<?php echo $session['id']; ?>" class="btn btn-primary btn-small" style="background: <?php echo $chartColor; ?>;">
                                 📈 Ergebnisse
                             </a>
                             <a href="../session.php?code=<?php echo $session['code']; ?>" class="btn btn-secondary btn-small" target="_blank">
