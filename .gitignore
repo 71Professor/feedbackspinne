@@ -1,0 +1,31 @@
+# Umgebungsvariablen (enthält Passwörter!)
+.env
+
+# Logs
+*.log
+logs/
+error.log
+access.log
+
+# Backup-Dateien
+*.backup
+*.bak
+*.sql
+*.sql.gz
+
+# IDE/Editor-spezifisch
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporäre Dateien
+tmp/
+temp/
+cache/
+
+# Composer (falls später verwendet)
+/vendor/
+composer.lock
