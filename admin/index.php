@@ -9,8 +9,14 @@ if (isAdminLoggedIn()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Rate Limiting prüfen (Schutz gegen Brute-Force)
+    if (!checkRateLimit('admin_login', 5, 900)) {
+        $remaining = getRateLimitTimeRemaining('admin_login');
+        $minutes = ceil($remaining / 60);
+        $error = "Zu viele fehlgeschlagene Login-Versuche. Bitte warte {$minutes} Minute(n) und versuche es erneut.";
+    }
     // CSRF-Token validieren (Schutz gegen Login CSRF)
-    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+    elseif (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = 'Ungültige Anfrage. Bitte lade die Seite neu und versuche es erneut.';
     } else {
         $username = $_POST['username'] ?? '';
@@ -23,6 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $stmt->fetch();
 
             if ($user && password_verify($password, $user['password_hash'])) {
+                // Login erfolgreich: Rate Limit zurücksetzen
+                resetRateLimit('admin_login');
+
                 // Session-Regeneration (Schutz gegen Session Fixation)
                 session_regenerate_id(true);
 
@@ -34,6 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: dashboard.php');
                 exit;
             } else {
+                // Login fehlgeschlagen: Rate Limit erhöhen
+                incrementRateLimit('admin_login');
                 $error = 'Ungültige Anmeldedaten.';
             }
         } else {

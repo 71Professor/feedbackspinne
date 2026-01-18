@@ -5,23 +5,36 @@ $error = '';
 $sessionData = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
-    $code = strtoupper(trim($_POST['code']));
-    
-    if (preg_match('/^[0-9]{4}$/', $code)) {
-        $pdo = getDB();
-        $stmt = $pdo->prepare("SELECT * FROM sessions WHERE code = ? AND is_active = 1");
-        $stmt->execute([$code]);
-        $sessionData = $stmt->fetch();
-        
-        if ($sessionData) {
-            // Session gefunden, weiterleiten
-            header("Location: session.php?code=" . $code);
-            exit;
-        } else {
-            $error = 'Session nicht gefunden oder nicht aktiv.';
-        }
+    // Rate Limiting: Schutz gegen Brute-Force auf 4-stellige Codes
+    // Strenger als Admin-Login: nur 10 Versuche in 15 Minuten
+    if (!checkRateLimit('session_code', 10, 900)) {
+        $remaining = getRateLimitTimeRemaining('session_code');
+        $minutes = ceil($remaining / 60);
+        $error = "Zu viele Versuche. Bitte warte {$minutes} Minute(n) und versuche es erneut.";
     } else {
-        $error = 'Bitte gib einen gültigen 4-stelligen Code ein.';
+        $code = strtoupper(trim($_POST['code']));
+
+        if (preg_match('/^[0-9]{4}$/', $code)) {
+            $pdo = getDB();
+            $stmt = $pdo->prepare("SELECT * FROM sessions WHERE code = ? AND is_active = 1");
+            $stmt->execute([$code]);
+            $sessionData = $stmt->fetch();
+
+            if ($sessionData) {
+                // Session gefunden: Rate Limit zurücksetzen
+                resetRateLimit('session_code');
+
+                // Weiterleiten zur Session
+                header("Location: session.php?code=" . $code);
+                exit;
+            } else {
+                // Session nicht gefunden: Rate Limit erhöhen
+                incrementRateLimit('session_code');
+                $error = 'Session nicht gefunden oder nicht aktiv.';
+            }
+        } else {
+            $error = 'Bitte gib einen gültigen 4-stelligen Code ein.';
+        }
     }
 }
 ?>
