@@ -49,6 +49,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_active'])) {
         exit;
     }
 }
+
+// Session kopieren (nur eigene Sessions)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
+    if (validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $sessionId = $_POST['session_id'] ?? 0;
+
+        // Original-Session abrufen (nur wenn sie dem Admin gehört)
+        $stmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ? AND created_by_admin_id = ?");
+        $stmt->execute([$sessionId, $_SESSION['admin_id']]);
+        $originalSession = $stmt->fetch();
+
+        if ($originalSession) {
+            // Neuen Session-Code generieren
+            $newCode = generateSessionCode();
+
+            // Neue Session mit allen Daten (außer id, code, created_at) erstellen
+            $stmt = $pdo->prepare("
+                INSERT INTO sessions (
+                    code, title, description, scale_min, scale_max,
+                    dimensions, chart_color, is_active, created_by_admin_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $newCode,
+                $originalSession['title'] . ' (Kopie)',
+                $originalSession['description'],
+                $originalSession['scale_min'],
+                $originalSession['scale_max'],
+                $originalSession['dimensions'],
+                $originalSession['chart_color'],
+                1, // Neue Sessions sind standardmäßig aktiv
+                $_SESSION['admin_id']
+            ]);
+
+            // Zur Ergebnisseite der neuen Session weiterleiten
+            $newSessionId = $pdo->lastInsertId();
+            header('Location: results.php?id=' . $newSessionId);
+            exit;
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -320,6 +361,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_active'])) {
                             <a href="../session.php?code=<?php echo $session['code']; ?>" class="btn btn-secondary btn-small" target="_blank">
                                 👁️ Vorschau
                             </a>
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                <input type="hidden" name="session_id" value="<?php echo $session['id']; ?>">
+                                <button type="submit" name="copy_session" class="btn btn-secondary btn-small">
+                                    📋 Kopieren
+                                </button>
+                            </form>
                             <form method="POST" style="display:inline;">
                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="session_id" value="<?php echo $session['id']; ?>">
