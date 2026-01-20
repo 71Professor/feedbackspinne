@@ -20,6 +20,13 @@ if (!$session) {
 // Dimensionen dekodieren
 $existingDimensions = json_decode($session['dimensions'], true);
 
+// Prüfen, ob bereits Feedback-Daten vorliegen
+$stmt = $pdo->prepare("SELECT COUNT(*) as submission_count FROM submissions WHERE session_id = ?");
+$stmt->execute([$sessionId]);
+$submissionData = $stmt->fetch();
+$hasSubmissions = $submissionData['submission_count'] > 0;
+$submissionCount = $submissionData['submission_count'];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = 'Ungültiger CSRF-Token';
@@ -324,6 +331,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             letter-spacing: 2px;
             color: var(--text);
         }
+        .warning {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            color: #92400e;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: start;
+            gap: 12px;
+        }
+        .warning-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .warning-content h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            color: #92400e;
+        }
+        .warning-content p {
+            margin: 0;
+            line-height: 1.5;
+        }
+        .warning-content strong {
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -348,6 +382,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="color: var(--muted); font-size: 14px; margin-bottom: 4px;">Session-Code:</div>
             <strong><?php echo htmlspecialchars($session['code']); ?></strong>
         </div>
+
+        <?php if ($hasSubmissions): ?>
+            <div class="warning">
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-content">
+                    <h3>Achtung: Feedback-Daten vorhanden</h3>
+                    <p>
+                        Für diese Session liegen bereits <strong><?php echo $submissionCount; ?> Feedback-Antwort(en)</strong> vor.
+                        Änderungen an den Dimensionen oder der Skala können die Auswertung beeinflussen und zu inkonsistenten Ergebnissen führen.
+                    </p>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="card">
             <form method="POST" id="sessionForm">
