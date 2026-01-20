@@ -189,10 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit">Anmelden</button>
             </form>
 
-            <div class="info">
-                <strong>ℹ️ Hinweis:</strong><br>
-                Für den ersten Login siehe SETUP.md im Projektverzeichnis.
-            </div>
+
         </div>
     </div>
 </body>
