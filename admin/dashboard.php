@@ -361,6 +361,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
                             <a href="../session.php?code=<?php echo $session['code']; ?>" class="btn btn-secondary btn-small" target="_blank">
                                 👁️ Vorschau
                             </a>
+                            <a href="edit.php?id=<?php echo $session['id']; ?>" class="btn btn-secondary btn-small">
+                                ✏️ Bearbeiten
+                            </a>
                             <form method="POST" style="display:inline;">
                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="session_id" value="<?php echo $session['id']; ?>">
