@@ -362,17 +362,6 @@ Die Ergebnis-Seite aktualisiert sich nicht automatisch. Drücke F5 oder aktualis
 
 ---
 
-## Migrationen
-
-Das Projekt enthält folgende Datenbank-Migrationen:
-
-- `migration_add_session_ownership.sql`: Fügt Multi-User-Support hinzu (created_by_admin_id)
-- `migration_add_chart_color.sql`: Fügt anpassbare Chart-Farben hinzu
-
-Weitere Informationen siehe `MIGRATION_ANLEITUNG.md`.
-
----
-
 ## Backup & Wartung
 
 ### Datenbank-Backup erstellen
@@ -395,61 +384,16 @@ mysqldump -u dein_benutzer -p feedbackspinne > backup_$(date +%Y%m%d).sql
 
 ---
 
-## Roadmap
-
-Mögliche zukünftige Features:
-
-- [ ] Automatische Live-Updates ohne F5 (WebSockets)
-- [ ] Export nach Excel/CSV
-- [ ] Passwort-Änderung im Admin-Panel
-- [ ] Session-Templates
-- [ ] Mehrsprachigkeit (i18n)
-- [ ] API für externe Integrationen
-- [ ] Erweiterte Statistiken und Analytics
-
----
-
 ## Lizenz
 
-Dieses Projekt ist derzeit ohne explizite Lizenz veröffentlicht. Bitte kontaktiere die Projektinhaber für Nutzungsrechte.
-
----
-
-## Beitragen
-
-Contributions sind willkommen! Bitte erstelle einen Fork, mache deine Änderungen und erstelle einen Pull Request.
-
-### Development Setup
-
-```bash
-# Repository forken und klonen
-git clone https://github.com/dein-username/feedbackspinne.git
-cd feedbackspinne
-
-# Lokale Entwicklungsumgebung einrichten
-cp .env.example .env
-# .env mit lokalen Credentials ausfüllen
-
-# Datenbank einrichten (siehe Installation)
-
-# Debug-Modus aktivieren
-# In .env: DEBUG_MODE=true
-```
-
-### Coding Standards
-- PSR-12 für PHP Code
-- Prepared Statements für alle DB-Queries
-- CSRF-Token für alle state-changing Operationen
-- Input-Validierung und Output-Escaping
+CC-BY-SA 4.0 Feedbackspinne von Michael Kohl
 
 ---
 
 ## Support & Kontakt
 
 Bei Fragen oder Problemen:
-- Erstelle ein Issue auf GitHub
-- Prüfe die vorhandene Dokumentation (SETUP.md, SECURITY_AUDIT.md)
-
+hallo@digitales-und-bildung.de
 ---
 
 ## Credits
