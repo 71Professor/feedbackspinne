@@ -201,7 +201,7 @@ chmod 600 .env
 Öffne im Browser:
 
 ```
-https://deine-domain.de/feedbackspinne/admin/
+https://feedbackspinne.de/admin/
 ```
 
 Logge dich mit dem Admin-Account ein und erstelle eine Test-Session.
@@ -225,7 +225,7 @@ Logge dich mit dem Admin-Account ein und erstelle eine Test-Session.
 
 ### Für Teilnehmende: An Session teilnehmen
 
-1. Öffne die Startseite: `https://deine-domain.de/feedbackspinne/`
+1. Öffne die Startseite: `https://feedbackspinne.de/`
 2. Gib den 4-stelligen Code ein (vom Admin erhalten)
 3. Bewerte die Dimensionen mit den Slidern
 4. Optional: Gib deinen Namen ein
@@ -233,7 +233,7 @@ Logge dich mit dem Admin-Account ein und erstelle eine Test-Session.
 
 **Direktlink für Teilnehmende:**
 ```
-https://deine-domain.de/feedbackspinne/session.php?code=3847
+https://feedbackspinne.de/session.php?code=3847
 ```
 
 ### Ergebnisse ansehen und exportieren
@@ -305,7 +305,7 @@ Speichert Admin-Accounts mit:
 
 **Vorbereitung:**
 1. Admin erstellt Session "KI-Workshop Reflexion" mit Code `7429`
-2. Admin bereitet QR-Code mit Link vor: `https://deine-domain.de/feedbackspinne/session.php?code=7429`
+2. Admin bereitet QR-Code mit Link vor: `https://feedbackspinne.de/session.php?code=7429`
 
 **Während des Workshops:**
 3. Admin zeigt Ergebnis-Seite per Beamer
@@ -393,7 +393,7 @@ CC-BY-SA 4.0 Feedbackspinne von Michael Kohl
 ## Support & Kontakt
 
 Bei Fragen oder Problemen:
-hallo@digitales-und-bildung.de
+hallo@feedbackspinne.de
 ---
 
 ## Credits

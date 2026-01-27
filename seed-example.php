@@ -5,7 +5,7 @@
  * Diese Datei erstellt automatisch eine Beispiel-Session für einen
  * Workshop-Feedback-Tag in der Pixelwerkstatt Bayern.
  *
- * Aufruf: https://deine-domain.de/seed-example.php
+ * Aufruf: https://feedbackspinne.de/seed-example.php
  *
  * WICHTIG: Nach dem Ausführen diese Datei aus Sicherheitsgründen löschen!
  */
