@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
 <body>
     <div class="container">
         <div class="card">
-            <h1>Reflexionstool</h1>
+            <h1>Feedback und Reflexion</h1>
             <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen.</p>
             
             <?php if ($error): ?>
