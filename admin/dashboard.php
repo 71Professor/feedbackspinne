@@ -512,11 +512,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
                     <li>kann die Session für eine erneute Verwendung kopieren/bearbeiten</li>
                 </ul>
 
-                <h2>Noch anzupassen/verfeinern</h2>
-                <ul>
-                    <li>vermeiden von mehreren Abgaben durch eine Person/von einem Gerät</li>
-                    <li>weitere Zugänge für Lehrpersonen anlegen, Umsetzung 2wöchiger Testzugänge ist gerade in Arbeit</li>
-                </ul>
             </div>
         </div>
     </div>
