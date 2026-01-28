@@ -167,11 +167,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
         .admin-link a:hover {
             color: var(--text);
         }
+        .logo {
+            display: block;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px auto;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
+            <img src="spider3.svg" alt="Feedbackspinne Logo" class="logo">
             <h1>Feedback und Reflexion</h1>
             <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen.</p>
             
