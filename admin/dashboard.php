@@ -288,6 +288,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
                 grid-template-columns: 1fr;
             }
         }
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: white;
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--muted);
+            padding: 0;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: var(--text);
+        }
+        .modal-body {
+            padding: 24px;
+        }
+        .modal-body h2 {
+            font-size: 18px;
+            margin: 24px 0 12px;
+            color: var(--text);
+        }
+        .modal-body h2:first-child {
+            margin-top: 0;
+        }
+        .modal-body ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .modal-body li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .modal-body a {
+            color: var(--green);
+            text-decoration: none;
+        }
+        .modal-body a:hover {
+            text-decoration: underline;
+        }
+        .modal-body code {
+            background: rgba(15,23,42,.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -299,6 +379,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
                     Neue Session
                 </a>
+                <button type="button" class="btn btn-secondary" onclick="openHelpModal()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Hilfe
+                </button>
                 <a href="logout.php" class="btn btn-secondary">Abmelden</a>
             </div>
         </header>
@@ -392,5 +476,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
             </div>
         <?php endif; ?>
     </div>
+
+    <!-- Hilfe Modal -->
+    <div class="modal-overlay" id="helpModal" onclick="closeHelpModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Feedbackspinne - Hilfe</h2>
+                <button class="modal-close" onclick="closeHelpModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h2>Die Lehrpersonen</h2>
+                <ul>
+                    <li>gehen zu <a href="https://feedbackspinne.de/admin" target="_blank">https://feedbackspinne.de/admin</a></li>
+                    <li>loggen sich ein mit Benutzername: <code>tester</code> / Passwort: <code>feedbackspinne</code></li>
+                    <li>klicken auf "Neue Session"</li>
+                    <li>wählen Farbe und Skala</li>
+                    <li>tippen die Dimensionen und Pole ein</li>
+                    <li>speichern das Feedback und erhalten eine vierstelligen Code</li>
+                    <li>geben den Teilnehmenden den vierstelligen Feedback-Code</li>
+                </ul>
+
+                <h2>Die Nutzenden</h2>
+                <ul>
+                    <li>rufen <a href="https://feedbackspinne.de" target="_blank">https://feedbackspinne.de</a> auf</li>
+                    <li>geben den Session Code ein, z.B. 1678</li>
+                    <li>geben optional ihren Namen an</li>
+                    <li>nehmen die Einstellungen vor</li>
+                    <li>senden die Werte ab</li>
+                </ul>
+
+                <h2>Die Lehrperson</h2>
+                <ul>
+                    <li>kann die Ergebnisse im Admin Dashboard ansehen</li>
+                    <li>kann die Ergebnisse als PDF oder PNG speichern</li>
+                    <li>kann die Session für eine erneute Verwendung kopieren/bearbeiten</li>
+                </ul>
+
+                <h2>Noch anzupassen/verfeinern</h2>
+                <ul>
+                    <li>vermeiden von mehreren Abgaben durch eine Person/von einem Gerät</li>
+                    <li>weitere Zugänge für Lehrpersonen anlegen, Umsetzung 2wöchiger Testzugänge ist gerade in Arbeit</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openHelpModal() {
+            document.getElementById('helpModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeHelpModal(event) {
+            if (!event || event.target === document.getElementById('helpModal')) {
+                document.getElementById('helpModal').classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Schließen mit Escape-Taste
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeHelpModal();
+            }
+        });
+    </script>
 </body>
 </html>
