@@ -180,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
         <div class="card">
             <img src="spider3.svg" alt="Feedbackspinne Logo" class="logo">
             <h1>Feedback und Reflexion</h1>
-            <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen.</p>
+            <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen. Nur ausprobieren? Test-Session: 9732</p>
             
             <?php if ($error): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
