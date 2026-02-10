@@ -44,16 +44,16 @@ Diese Anleitung hilft dir, aussagekräftige und gut lesbare Feedback-Sessions mi
 - Für reflektierte Bewertungen
 - Beispiel: 1 = sehr niedrig, 10 = sehr hoch
 
-**0-100 Skala** (Sehr differenziert)
+**0-20 Skala** (Sehr differenziert)
 - Für Experten-Feedback
 - Für quantitative Analysen
-- Beispiel: 0% = gar nicht, 100% = vollständig
+- Beispiel: 0 = gar nicht, 20 = vollständig
 
 ### Was vermeiden?
 
 - Ungerade Skalen mit Mittelwert können zu "neutralen" Bewertungen verleiten
-- Zu große Skalen (z.B. 1-100) überfordern oft
-- Negative Werte (z.B. -5 bis +5) verwirren manche Teilnehmende
+- Zu große Skalen (z.B. 1-20) überfordern oft
+- Negative Skalen (-5 bis +5) zusammen mit Text verwirren oft und sind deshalb nicht vorgesehen
 
 ---
 
