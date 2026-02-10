@@ -269,7 +269,13 @@ if ($counts > 0) {
         <header>
             <div class="header-top">
                 <h1>📊 <?php echo htmlspecialchars($session['title']); ?></h1>
-                <a href="dashboard.php" class="btn btn-secondary">← Zurück</a>
+                <div style="display: flex; gap: 10px;">
+                    <a href="best-practice.php" class="btn btn-secondary" target="_blank">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v6M12 16v.01"/></svg>
+                        Best Practice
+                    </a>
+                    <a href="dashboard.php" class="btn btn-secondary">← Zurück</a>
+                </div>
             </div>
             <div class="session-meta">
                 <div class="meta-item">
