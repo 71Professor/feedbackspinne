@@ -11,6 +11,7 @@ access.log
 *.backup
 *.bak
 *.sql
+!migration*.sql
 *.sql.gz
 
 # IDE/Editor-spezifisch
