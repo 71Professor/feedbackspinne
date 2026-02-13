@@ -1,6 +1,6 @@
 # Leitfaden zur Feedback-Gestaltung
 
-**Für Workshopleiter und Feedbackersteller**
+**Für Workshopleiter:in und Feedbackersteller:in**
 
 Diese Anleitung hilft dir, aussagekräftige und gut lesbare Feedback-Sessions mit der Feedbackspinne zu erstellen.
 
