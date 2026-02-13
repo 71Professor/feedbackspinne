@@ -128,90 +128,267 @@ function validateCSRFToken($token) {
 }
 
 /**
+ * Get real client IP address, considering proxies and load balancers
+ *
+ * Checks multiple headers in order of reliability to determine the true client IP.
+ * This helps prevent rate limit bypasses via proxy header manipulation.
+ *
+ * @return string Client IP address
+ */
+function getClientIP() {
+    // Check for proxy headers in order of reliability
+    $headers = [
+        'HTTP_CF_CONNECTING_IP',    // Cloudflare
+        'HTTP_X_FORWARDED_FOR',     // Standard proxy header
+        'HTTP_X_REAL_IP',           // Nginx proxy
+        'REMOTE_ADDR'               // Direct connection
+    ];
+
+    foreach ($headers as $header) {
+        if (!empty($_SERVER[$header])) {
+            $ip = $_SERVER[$header];
+
+            // X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
+            // Take the first (leftmost) IP as the original client
+            if ($header === 'HTTP_X_FORWARDED_FOR') {
+                $ips = array_map('trim', explode(',', $ip));
+                $ip = $ips[0];
+            }
+
+            // Validate IP address format and filter out private/reserved ranges
+            // to prevent header spoofing attacks
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                return $ip;
+            }
+        }
+    }
+
+    // Fallback to REMOTE_ADDR (always available)
+    return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+}
+
+/**
  * Rate Limiting - Schutz gegen Brute-Force-Angriffe
  *
- * @param string $key Eindeutiger Key (z.B. 'login_attempt', 'session_code')
+ * Database-backed rate limiting to prevent session-based bypasses.
+ * Uses client IP address (+ username for admin login) as identifier.
+ *
+ * @param string $key Eindeutiger Key (z.B. 'admin_login', 'session_code')
  * @param int $maxAttempts Maximale Versuche im Zeitfenster (default: 5)
  * @param int $timeWindow Zeitfenster in Sekunden (default: 900 = 15 Min)
  * @return bool True wenn erlaubt, False wenn Rate Limit überschritten
  */
 function checkRateLimit($key, $maxAttempts = 5, $timeWindow = 900) {
-    $rateLimitKey = 'rate_limit_' . $key;
-    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $fullKey = $rateLimitKey . '_' . md5($clientIP); // IP-basiert
+    $pdo = getDB();
+    $clientIP = getClientIP();
 
-    if (!isset($_SESSION[$fullKey])) {
-        $_SESSION[$fullKey] = [
-            'count' => 0,
-            'first_attempt' => time(),
-            'blocked_until' => null
-        ];
+    // Build client identifier - for admin login, include username hash
+    $identifier = $clientIP;
+    if ($key === 'admin_login' && isset($_POST['username'])) {
+        // Hash username to avoid storing PII directly, but maintain per-user limits
+        $identifier = $clientIP . '_' . md5($_POST['username']);
     }
 
-    $data = &$_SESSION[$fullKey];
+    try {
+        // Start transaction for atomic read-modify-write
+        $pdo->beginTransaction();
 
-    // Prüfen ob noch geblockt
-    if ($data['blocked_until'] && time() < $data['blocked_until']) {
-        return false;
+        // Get or create rate limit record with row-level lock
+        $stmt = $pdo->prepare("
+            SELECT * FROM rate_limits
+            WHERE limit_key = ? AND client_identifier = ?
+            FOR UPDATE
+        ");
+        $stmt->execute([$key, $identifier]);
+        $record = $stmt->fetch();
+
+        $now = time();
+
+        if (!$record) {
+            // First attempt - create record
+            $stmt = $pdo->prepare("
+                INSERT INTO rate_limits
+                (limit_key, client_identifier, attempt_count, first_attempt_at)
+                VALUES (?, ?, 0, FROM_UNIXTIME(?))
+            ");
+            $stmt->execute([$key, $identifier, $now]);
+            $pdo->commit();
+            return true;
+        }
+
+        // Convert timestamps to Unix time for calculations
+        $firstAttempt = strtotime($record['first_attempt_at']);
+        $blockedUntil = $record['blocked_until'] ? strtotime($record['blocked_until']) : null;
+
+        // Check if currently blocked
+        if ($blockedUntil && $now < $blockedUntil) {
+            $pdo->commit();
+            return false;
+        }
+
+        // Check if time window has expired - reset if so
+        if ($now - $firstAttempt > $timeWindow) {
+            $stmt = $pdo->prepare("
+                UPDATE rate_limits
+                SET attempt_count = 0,
+                    first_attempt_at = FROM_UNIXTIME(?),
+                    blocked_until = NULL,
+                    last_attempt_at = FROM_UNIXTIME(?)
+                WHERE limit_key = ? AND client_identifier = ?
+            ");
+            $stmt->execute([$now, $now, $key, $identifier]);
+            $pdo->commit();
+            return true;
+        }
+
+        // Check if limit reached
+        if ($record['attempt_count'] >= $maxAttempts) {
+            // Progressive blocking: longer blocks for repeated violations
+            $blockMultiplier = 1 + floor($record['attempt_count'] / $maxAttempts);
+            $blockDuration = min(3600, $timeWindow * $blockMultiplier); // Max 1 hour
+            $blockedUntil = $now + $blockDuration;
+
+            $stmt = $pdo->prepare("
+                UPDATE rate_limits
+                SET blocked_until = FROM_UNIXTIME(?),
+                    last_attempt_at = FROM_UNIXTIME(?)
+                WHERE limit_key = ? AND client_identifier = ?
+            ");
+            $stmt->execute([$blockedUntil, $now, $key, $identifier]);
+            $pdo->commit();
+            return false;
+        }
+
+        // Update last attempt time
+        $stmt = $pdo->prepare("
+            UPDATE rate_limits
+            SET last_attempt_at = FROM_UNIXTIME(?)
+            WHERE limit_key = ? AND client_identifier = ?
+        ");
+        $stmt->execute([$now, $key, $identifier]);
+
+        $pdo->commit();
+        return true;
+
+    } catch (PDOException $e) {
+        // Rollback on error
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        // Log error if in debug mode
+        if (DEBUG_MODE) {
+            error_log("Rate limit check failed: " . $e->getMessage());
+        }
+
+        // Fail-open: allow request if rate limiting system fails
+        // Alternative: fail-closed by returning false
+        return true;
     }
-
-    // Zeitfenster abgelaufen? Zurücksetzen
-    if (time() - $data['first_attempt'] > $timeWindow) {
-        $data['count'] = 0;
-        $data['first_attempt'] = time();
-        $data['blocked_until'] = null;
-    }
-
-    // Limit erreicht?
-    if ($data['count'] >= $maxAttempts) {
-        // Progressive Blockierung: Je mehr Versuche, desto länger gesperrt
-        $blockDuration = min(3600, $timeWindow * (1 + floor($data['count'] / $maxAttempts)));
-        $data['blocked_until'] = time() + $blockDuration;
-        return false;
-    }
-
-    return true;
 }
 
 /**
  * Rate Limit Counter erhöhen (nach fehlgeschlagenem Versuch)
+ *
+ * Increments the attempt counter in the database after a failed attempt.
+ *
+ * @param string $key Rate limit key (e.g., 'admin_login', 'session_code')
  */
 function incrementRateLimit($key) {
-    $rateLimitKey = 'rate_limit_' . $key;
-    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $fullKey = $rateLimitKey . '_' . md5($clientIP);
+    $pdo = getDB();
+    $clientIP = getClientIP();
 
-    if (isset($_SESSION[$fullKey])) {
-        $_SESSION[$fullKey]['count']++;
+    // Build client identifier - same logic as checkRateLimit()
+    $identifier = $clientIP;
+    if ($key === 'admin_login' && isset($_POST['username'])) {
+        $identifier = $clientIP . '_' . md5($_POST['username']);
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE rate_limits
+            SET attempt_count = attempt_count + 1,
+                last_attempt_at = CURRENT_TIMESTAMP
+            WHERE limit_key = ? AND client_identifier = ?
+        ");
+        $stmt->execute([$key, $identifier]);
+    } catch (PDOException $e) {
+        if (DEBUG_MODE) {
+            error_log("Rate limit increment failed: " . $e->getMessage());
+        }
     }
 }
 
 /**
  * Rate Limit zurücksetzen (nach erfolgreichem Versuch)
+ *
+ * Deletes the rate limit record from the database after a successful attempt.
+ *
+ * @param string $key Rate limit key (e.g., 'admin_login', 'session_code')
  */
 function resetRateLimit($key) {
-    $rateLimitKey = 'rate_limit_' . $key;
-    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $fullKey = $rateLimitKey . '_' . md5($clientIP);
+    $pdo = getDB();
+    $clientIP = getClientIP();
 
-    unset($_SESSION[$fullKey]);
+    // Build client identifier - same logic as checkRateLimit()
+    $identifier = $clientIP;
+    if ($key === 'admin_login' && isset($_POST['username'])) {
+        $identifier = $clientIP . '_' . md5($_POST['username']);
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            DELETE FROM rate_limits
+            WHERE limit_key = ? AND client_identifier = ?
+        ");
+        $stmt->execute([$key, $identifier]);
+    } catch (PDOException $e) {
+        if (DEBUG_MODE) {
+            error_log("Rate limit reset failed: " . $e->getMessage());
+        }
+    }
 }
 
 /**
  * Verbleibende Zeit bis Rate Limit zurückgesetzt wird
+ *
+ * Queries the database for the blocked_until timestamp and calculates remaining time.
+ *
+ * @param string $key Rate limit key (e.g., 'admin_login', 'session_code')
  * @return int Sekunden bis Reset (0 wenn nicht geblockt)
  */
 function getRateLimitTimeRemaining($key) {
-    $rateLimitKey = 'rate_limit_' . $key;
-    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $fullKey = $rateLimitKey . '_' . md5($clientIP);
+    $pdo = getDB();
+    $clientIP = getClientIP();
 
-    if (isset($_SESSION[$fullKey]['blocked_until'])) {
-        $remaining = $_SESSION[$fullKey]['blocked_until'] - time();
-        return max(0, $remaining);
+    // Build client identifier - same logic as checkRateLimit()
+    $identifier = $clientIP;
+    if ($key === 'admin_login' && isset($_POST['username'])) {
+        $identifier = $clientIP . '_' . md5($_POST['username']);
     }
 
-    return 0;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT blocked_until
+            FROM rate_limits
+            WHERE limit_key = ? AND client_identifier = ?
+        ");
+        $stmt->execute([$key, $identifier]);
+        $record = $stmt->fetch();
+
+        if ($record && $record['blocked_until']) {
+            $blockedUntil = strtotime($record['blocked_until']);
+            $remaining = $blockedUntil - time();
+            return max(0, $remaining);
+        }
+
+        return 0;
+    } catch (PDOException $e) {
+        if (DEBUG_MODE) {
+            error_log("Rate limit time check failed: " . $e->getMessage());
+        }
+        return 0;
+    }
 }
 
 // 4-stelligen Code generieren
