@@ -95,6 +95,22 @@ function getDB() {
     return $pdo;
 }
 
+// Session-Sicherheitsparameter setzen (vor session_start)
+// HttpOnly: Session-Cookie nur über HTTP(S) zugreifbar, nicht über JavaScript
+ini_set('session.cookie_httponly', '1');
+
+// Secure: Cookie nur über HTTPS senden (wenn HTTPS aktiv)
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+           || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+           || (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+ini_set('session.cookie_secure', $isHttps ? '1' : '0');
+
+// SameSite: Schutz gegen CSRF-Angriffe über Cross-Site-Requests
+ini_set('session.cookie_samesite', 'Lax');
+
+// Strict Mode: Nur serverseitig erzeugte Session-IDs akzeptieren
+ini_set('session.use_strict_mode', '1');
+
 // Session starten
 session_start();
 
