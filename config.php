@@ -245,4 +245,20 @@ function requireAdmin() {
         header('Location: /admin/index.php');
         exit;
     }
+
+    // Session-Timeout prüfen
+    if (isset($_SESSION['last_activity'])) {
+        $inactiveTime = time() - $_SESSION['last_activity'];
+
+        if ($inactiveTime > SESSION_TIMEOUT) {
+            // Session abgelaufen: Ausloggen und zur Login-Seite weiterleiten
+            session_unset();
+            session_destroy();
+            header('Location: /admin/index.php');
+            exit;
+        }
+    }
+
+    // Aktivitätszeitpunkt aktualisieren
+    $_SESSION['last_activity'] = time();
 }
