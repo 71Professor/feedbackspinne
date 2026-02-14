@@ -1,5 +1,6 @@
 <?php
 require_once '../config.php';
+setSecurityHeaders();
 requireAdmin();
 
 $success = false;
@@ -31,66 +32,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = 'Ungültiger CSRF-Token';
     } else {
-        $title = trim($_POST['title'] ?? '');
-        $description = trim($_POST['description'] ?? '');
-        $scaleMin = (int)($_POST['scale_min'] ?? 1);
-        $scaleMax = (int)($_POST['scale_max'] ?? 10);
-        $chartColor = sanitizeChartColor(trim($_POST['chart_color'] ?? '#7ab800'));
-        $dimensionNames = $_POST['dimension_names'] ?? [];
-        $dimensionLefts = $_POST['dimension_lefts'] ?? [];
-        $dimensionRights = $_POST['dimension_rights'] ?? [];
+        // Zentrale Validierung verwenden
+        $validationResult = validateSessionData($_POST);
 
-        // Validierung
-        if (empty($title)) {
-            $error = 'Bitte gib einen Titel ein.';
-        } elseif (count($dimensionNames) < 3) {
-            $error = 'Mindestens 3 Dimensionen erforderlich.';
-        } elseif ($scaleMax <= $scaleMin) {
-            $error = 'Max-Wert muss größer als Min-Wert sein.';
+        if (!$validationResult['valid']) {
+            $error = $validationResult['error'];
         } else {
-            // Dimensionen zusammenstellen
-            $dimensions = [];
-            foreach ($dimensionNames as $i => $name) {
-                if (!empty(trim($name))) {
-                    $dimensions[] = [
-                        'name' => trim($name),
-                        'left' => trim($dimensionLefts[$i] ?? ''),
-                        'right' => trim($dimensionRights[$i] ?? '')
-                    ];
-                }
-            }
+            $data = $validationResult['data'];
 
-            if (count($dimensions) >= 3) {
-                try {
-                    $stmt = $pdo->prepare("
-                        UPDATE sessions
-                        SET title = ?, description = ?, scale_min = ?, scale_max = ?, chart_color = ?, dimensions = ?
-                        WHERE id = ? AND created_by_admin_id = ?
-                    ");
-                    $stmt->execute([
-                        $title,
-                        $description,
-                        $scaleMin,
-                        $scaleMax,
-                        $chartColor,
-                        json_encode($dimensions, JSON_UNESCAPED_UNICODE),
-                        $sessionId,
-                        $_SESSION['admin_id']
-                    ]);
+            try {
+                $stmt = $pdo->prepare("
+                    UPDATE sessions
+                    SET title = ?, description = ?, scale_min = ?, scale_max = ?, chart_color = ?, dimensions = ?
+                    WHERE id = ? AND created_by_admin_id = ?
+                ");
+                $stmt->execute([
+                    $data['title'],
+                    $data['description'],
+                    $data['scale_min'],
+                    $data['scale_max'],
+                    $data['chart_color'],
+                    json_encode($data['dimensions'], JSON_UNESCAPED_UNICODE),
+                    $sessionId,
+                    $_SESSION['admin_id']
+                ]);
 
-                    $success = true;
+                $success = true;
 
-                    // Session-Daten neu laden
-                    $stmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ? AND created_by_admin_id = ?");
-                    $stmt->execute([$sessionId, $_SESSION['admin_id']]);
-                    $session = $stmt->fetch();
-                    $existingDimensions = json_decode($session['dimensions'], true);
-                } catch (Exception $e) {
-                    error_log('Session update failed: ' . $e->getMessage());
-                    $error = 'Fehler beim Aktualisieren der Session. Bitte versuche es erneut oder kontaktiere den Administrator.';
-                }
-            } else {
-                $error = 'Mindestens 3 Dimensionen erforderlich.';
+                // Session-Daten neu laden
+                $stmt = $pdo->prepare("SELECT * FROM sessions WHERE id = ? AND created_by_admin_id = ?");
+                $stmt->execute([$sessionId, $_SESSION['admin_id']]);
+                $session = $stmt->fetch();
+                $existingDimensions = json_decode($session['dimensions'], true);
+            } catch (Exception $e) {
+                error_log('Session update failed: ' . $e->getMessage());
+                $error = 'Fehler beim Aktualisieren der Session. Bitte versuche es erneut oder kontaktiere den Administrator.';
             }
         }
     }

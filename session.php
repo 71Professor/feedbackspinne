@@ -62,36 +62,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
     if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
         $error = 'Ungültiger Sicherheits-Token. Bitte lade die Seite neu und versuche es erneut.';
     } else {
-        $participantName = trim($_POST['participant_name'] ?? '');
-        $values = $_POST['values'] ?? [];
+        // Validate participant name (optional, max 100 chars)
+        $nameResult = validateText($_POST['participant_name'] ?? '', 100, true, 'Name');
 
-        // Validierung
-        if (count($values) === count($dimensions)) {
-        $validValues = true;
-        foreach ($values as $val) {
-            if (!is_numeric($val) || $val < $session['scale_min'] || $val > $session['scale_max']) {
-                $validValues = false;
-                break;
-            }
-        }
-        
-        if ($validValues) {
-            try {
-                $stmt = $pdo->prepare("INSERT INTO submissions (session_id, participant_name, `values`) VALUES (?, ?, ?)");
-                $stmt->execute([
-                    $session['id'],
-                    $participantName,
-                    json_encode(array_map('intval', $values))
-                ]);
-                $success = true;
-            } catch (Exception $e) {
-                $error = 'Fehler beim Speichern. Bitte versuche es erneut.';
-            }
-            } else {
-                $error = 'Ungültige Werte eingegeben.';
-            }
+        if (!$nameResult['valid']) {
+            $error = $nameResult['error'];
         } else {
-            $error = 'Bitte fülle alle Dimensionen aus.';
+            $participantName = $nameResult['value'];
+            $values = $_POST['values'] ?? [];
+
+            // Validierung
+            if (count($values) === count($dimensions)) {
+            $validValues = true;
+            foreach ($values as $val) {
+                if (!is_numeric($val) || $val < $session['scale_min'] || $val > $session['scale_max']) {
+                    $validValues = false;
+                    break;
+                }
+            }
+
+            if ($validValues) {
+                try {
+                    $stmt = $pdo->prepare("INSERT INTO submissions (session_id, participant_name, `values`) VALUES (?, ?, ?)");
+                    $stmt->execute([
+                        $session['id'],
+                        $participantName,
+                        json_encode(array_map('intval', $values))
+                    ]);
+                    $success = true;
+                } catch (Exception $e) {
+                    $error = 'Fehler beim Speichern. Bitte versuche es erneut.';
+                }
+                } else {
+                    $error = 'Ungültige Werte eingegeben.';
+                }
+            } else {
+                $error = 'Bitte fülle alle Dimensionen aus.';
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 <?php
 require_once '../config.php';
+setSecurityHeaders();
 requireAdmin();
 
 // Markdown-Datei laden
