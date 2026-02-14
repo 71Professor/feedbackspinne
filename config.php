@@ -399,8 +399,28 @@ function generateSessionCode() {
         $stmt = $pdo->prepare("SELECT id FROM sessions WHERE code = ?");
         $stmt->execute([$code]);
     } while ($stmt->rowCount() > 0); // Wiederhole, falls Code bereits existiert
-    
+
     return $code;
+}
+
+/**
+ * Validate and sanitize chart color to prevent CSS injection
+ *
+ * Ensures the color is a valid hex color format (#RRGGBB) to prevent
+ * CSS/HTML context breakouts and injection attacks.
+ *
+ * @param string $color The color value to validate (e.g., from user input or database)
+ * @param string $default The default color to use if validation fails (default: '#7ab800')
+ * @return string A safe hex color value
+ */
+function sanitizeChartColor($color, $default = '#7ab800') {
+    // Strict hex color format validation: #RRGGBB (6 hex digits)
+    if (preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) {
+        return $color;
+    }
+
+    // Return safe default if validation fails
+    return $default;
 }
 
 // JSON-Response senden

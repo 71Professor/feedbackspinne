@@ -21,7 +21,7 @@ if (!$session) {
 }
 
 $dimensions = json_decode($session['dimensions'], true);
-$chartColor = $session['chart_color'] ?? '#7ab800';
+$chartColor = sanitizeChartColor($session['chart_color'] ?? '#7ab800');
 
 // CSRF-Token generieren für Formulare
 $csrfToken = generateCSRFToken();

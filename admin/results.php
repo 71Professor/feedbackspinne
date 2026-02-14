@@ -24,7 +24,7 @@ if (!$session) {
 }
 
 $dimensions = json_decode($session['dimensions'], true);
-$chartColor = $session['chart_color'] ?? '#7ab800';
+$chartColor = sanitizeChartColor($session['chart_color'] ?? '#7ab800');
 
 // Farbe für CSS-Variablen konvertieren (RGB)
 function hexToRgb($hex) {
