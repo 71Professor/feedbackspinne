@@ -459,3 +459,55 @@ function requireAdmin() {
     // Aktivitätszeitpunkt aktualisieren
     $_SESSION['last_activity'] = time();
 }
+
+/**
+ * Set application-level security headers
+ *
+ * Implements defense-in-depth security headers to protect against various attacks:
+ * - Content-Security-Policy: Whitelists allowed sources for scripts, styles, etc.
+ * - X-Content-Type-Options: Prevents MIME-sniffing attacks
+ * - X-Frame-Options: Prevents clickjacking attacks
+ * - Referrer-Policy: Controls referrer information leakage
+ * - Permissions-Policy: Restricts browser features
+ *
+ * Call this function early in each entry point (before any output).
+ */
+function setSecurityHeaders() {
+    // Detect if HTTPS is active
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+               || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+               || (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+
+    // Content Security Policy
+    // Whitelist CDN sources for scripts and allow inline styles (required for dynamic theming)
+    $csp = [
+        "default-src 'self'",
+        "script-src 'self' https://cdnjs.cloudflare.com",
+        "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for dynamic color theming
+        "img-src 'self' data:", // data: needed for chart export
+        "font-src 'self'",
+        "connect-src 'self'",
+        "frame-ancestors 'none'", // Equivalent to X-Frame-Options: DENY
+        "base-uri 'self'",
+        "form-action 'self'"
+    ];
+
+    // Add upgrade-insecure-requests only on HTTPS
+    if ($isHttps) {
+        $csp[] = "upgrade-insecure-requests";
+    }
+
+    header("Content-Security-Policy: " . implode('; ', $csp));
+
+    // Prevent MIME-sniffing attacks
+    header("X-Content-Type-Options: nosniff");
+
+    // Prevent clickjacking (redundant with CSP frame-ancestors, but provides defense-in-depth)
+    header("X-Frame-Options: DENY");
+
+    // Control referrer information leakage
+    header("Referrer-Policy: strict-origin-when-cross-origin");
+
+    // Restrict browser features to minimum required
+    header("Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()");
+}

@@ -1,6 +1,9 @@
 <?php
 require_once 'config.php';
 
+// Set security headers
+setSecurityHeaders();
+
 $code = $_GET['code'] ?? '';
 $success = false;
 $error = '';
@@ -100,7 +103,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($session['title']); ?></title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+            integrity="sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
     <style>
         :root {
             --green: <?php echo $chartColor; ?>;
