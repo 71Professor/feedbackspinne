@@ -86,7 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $session = $stmt->fetch();
                     $existingDimensions = json_decode($session['dimensions'], true);
                 } catch (Exception $e) {
-                    $error = 'Fehler beim Aktualisieren der Session: ' . $e->getMessage();
+                    error_log('Session update failed: ' . $e->getMessage());
+                    $error = 'Fehler beim Aktualisieren der Session. Bitte versuche es erneut oder kontaktiere den Administrator.';
                 }
             } else {
                 $error = 'Mindestens 3 Dimensionen erforderlich.';

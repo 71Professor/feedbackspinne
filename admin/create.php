@@ -62,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $success = true;
                     $generatedCode = $code;
                 } catch (Exception $e) {
-                    $error = 'Fehler beim Erstellen der Session: ' . $e->getMessage();
+                    error_log('Session creation failed: ' . $e->getMessage());
+                    $error = 'Fehler beim Erstellen der Session. Bitte versuche es erneut oder kontaktiere den Administrator.';
                 }
             } else {
                 $error = 'Mindestens 3 Dimensionen erforderlich.';
