@@ -10,12 +10,12 @@ Options -Indexes
 # HTTPS Enforcement (Optional - uncomment if needed)
 # ========================================
 # Uncomment these lines after verifying your SSL certificate is properly configured
-# <IfModule mod_rewrite.c>
-#     RewriteEngine On
-#     RewriteCond %{HTTPS} off
-#     RewriteCond %{HTTP:X-Forwarded-Proto} !https
-#     RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
-# </IfModule>
+ <IfModule mod_rewrite.c>
+     RewriteEngine On
+     RewriteCond %{HTTPS} off
+     RewriteCond %{HTTP:X-Forwarded-Proto} !https
+     RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+ </IfModule>
 
 # ========================================
 # Sensitive File Protection
