@@ -482,11 +482,11 @@ function setSecurityHeaders() {
     // Whitelist CDN sources for scripts and allow inline styles (required for dynamic theming)
     $csp = [
         "default-src 'self'",
-        "script-src 'self' https://cdnjs.cloudflare.com",
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com", // unsafe-inline needed for chart initialization
         "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for dynamic color theming
         "img-src 'self' data:", // data: needed for chart export
         "font-src 'self'",
-        "connect-src 'self'",
+        "connect-src 'self' https://cdnjs.cloudflare.com", // Allow source maps from CDN
         "frame-ancestors 'none'", // Equivalent to X-Frame-Options: DENY
         "base-uri 'self'",
         "form-action 'self'"
