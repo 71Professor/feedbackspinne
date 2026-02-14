@@ -423,6 +423,186 @@ function sanitizeChartColor($color, $default = '#7ab800') {
     return $default;
 }
 
+/**
+ * Validate and sanitize text input with length limit
+ *
+ * Ensures the input is valid UTF-8, trims whitespace, and enforces
+ * maximum length to prevent database overflow and potential attacks.
+ *
+ * @param string $input The input string to validate
+ * @param int $maxLength Maximum allowed length (default: 255)
+ * @param bool $allowEmpty Whether empty strings are allowed (default: false)
+ * @param string $fieldName Field name for error messages
+ * @return array ['valid' => bool, 'value' => string, 'error' => string|null]
+ */
+function validateText($input, $maxLength = 255, $allowEmpty = false, $fieldName = 'Eingabe') {
+    // Trim whitespace
+    $value = trim($input);
+
+    // Check if empty
+    if ($value === '') {
+        if ($allowEmpty) {
+            return ['valid' => true, 'value' => '', 'error' => null];
+        }
+        return ['valid' => false, 'value' => '', 'error' => "$fieldName darf nicht leer sein."];
+    }
+
+    // Validate UTF-8 encoding
+    if (!mb_check_encoding($value, 'UTF-8')) {
+        return ['valid' => false, 'value' => '', 'error' => "$fieldName enthält ungültige Zeichen."];
+    }
+
+    // Check length
+    $length = mb_strlen($value, 'UTF-8');
+    if ($length > $maxLength) {
+        return ['valid' => false, 'value' => '', 'error' => "$fieldName ist zu lang (max. $maxLength Zeichen, aktuell: $length)."];
+    }
+
+    return ['valid' => true, 'value' => $value, 'error' => null];
+}
+
+/**
+ * Validate integer within range
+ *
+ * Ensures the value is a valid integer within the specified range.
+ *
+ * @param mixed $input The input value to validate
+ * @param int $min Minimum allowed value
+ * @param int $max Maximum allowed value
+ * @param string $fieldName Field name for error messages
+ * @return array ['valid' => bool, 'value' => int|null, 'error' => string|null]
+ */
+function validateInteger($input, $min, $max, $fieldName = 'Wert') {
+    // Check if numeric
+    if (!is_numeric($input)) {
+        return ['valid' => false, 'value' => null, 'error' => "$fieldName muss eine Zahl sein."];
+    }
+
+    $value = (int)$input;
+
+    // Check range
+    if ($value < $min || $value > $max) {
+        return ['valid' => false, 'value' => null, 'error' => "$fieldName muss zwischen $min und $max liegen."];
+    }
+
+    return ['valid' => true, 'value' => $value, 'error' => null];
+}
+
+/**
+ * Validate session creation/edit data
+ *
+ * Centralized validation for session creation and editing to avoid code duplication.
+ *
+ * @param array $postData The $_POST data to validate
+ * @return array ['valid' => bool, 'data' => array|null, 'error' => string|null]
+ */
+function validateSessionData($postData) {
+    $errors = [];
+    $validatedData = [];
+
+    // Validate title (required, max 200 chars)
+    $titleResult = validateText($postData['title'] ?? '', 200, false, 'Titel');
+    if (!$titleResult['valid']) {
+        $errors[] = $titleResult['error'];
+    } else {
+        $validatedData['title'] = $titleResult['value'];
+    }
+
+    // Validate description (optional, max 1000 chars)
+    $descResult = validateText($postData['description'] ?? '', 1000, true, 'Beschreibung');
+    if (!$descResult['valid']) {
+        $errors[] = $descResult['error'];
+    } else {
+        $validatedData['description'] = $descResult['value'];
+    }
+
+    // Validate scale_min (0-10)
+    $scaleMinResult = validateInteger($postData['scale_min'] ?? '', 0, 10, 'Skala-Minimum');
+    if (!$scaleMinResult['valid']) {
+        $errors[] = $scaleMinResult['error'];
+    } else {
+        $validatedData['scale_min'] = $scaleMinResult['value'];
+    }
+
+    // Validate scale_max (1-20)
+    $scaleMaxResult = validateInteger($postData['scale_max'] ?? '', 1, 20, 'Skala-Maximum');
+    if (!$scaleMaxResult['valid']) {
+        $errors[] = $scaleMaxResult['error'];
+    } else {
+        $validatedData['scale_max'] = $scaleMaxResult['value'];
+    }
+
+    // Check scale_max > scale_min
+    if (isset($validatedData['scale_min']) && isset($validatedData['scale_max'])) {
+        if ($validatedData['scale_max'] <= $validatedData['scale_min']) {
+            $errors[] = 'Skala-Maximum muss größer als Skala-Minimum sein.';
+        }
+    }
+
+    // Validate chart_color
+    $chartColor = sanitizeChartColor(trim($postData['chart_color'] ?? '#7ab800'));
+    $validatedData['chart_color'] = $chartColor;
+
+    // Validate dimensions
+    $dimensionNames = $postData['dimension_names'] ?? [];
+    $dimensionLefts = $postData['dimension_lefts'] ?? [];
+    $dimensionRights = $postData['dimension_rights'] ?? [];
+
+    if (!is_array($dimensionNames) || count($dimensionNames) < 3) {
+        $errors[] = 'Mindestens 3 Dimensionen erforderlich.';
+    } else {
+        $dimensions = [];
+        foreach ($dimensionNames as $i => $name) {
+            // Validate dimension name (required, max 100 chars)
+            $nameResult = validateText($name, 100, false, "Dimension " . ($i + 1));
+            if (!$nameResult['valid']) {
+                $errors[] = $nameResult['error'];
+                continue;
+            }
+
+            // Validate poles (optional, max 100 chars each)
+            $leftResult = validateText($dimensionLefts[$i] ?? '', 100, true, "Linker Pol (Dimension " . ($i + 1) . ")");
+            $rightResult = validateText($dimensionRights[$i] ?? '', 100, true, "Rechter Pol (Dimension " . ($i + 1) . ")");
+
+            if (!$leftResult['valid']) {
+                $errors[] = $leftResult['error'];
+            }
+            if (!$rightResult['valid']) {
+                $errors[] = $rightResult['error'];
+            }
+
+            if ($nameResult['valid'] && $leftResult['valid'] && $rightResult['valid']) {
+                $dimensions[] = [
+                    'name' => $nameResult['value'],
+                    'left' => $leftResult['value'],
+                    'right' => $rightResult['value']
+                ];
+            }
+        }
+
+        if (count($dimensions) < 3) {
+            $errors[] = 'Mindestens 3 gültige Dimensionen erforderlich.';
+        } else {
+            $validatedData['dimensions'] = $dimensions;
+        }
+    }
+
+    // Return result
+    if (!empty($errors)) {
+        return [
+            'valid' => false,
+            'data' => null,
+            'error' => implode(' ', $errors)
+        ];
+    }
+
+    return [
+        'valid' => true,
+        'data' => $validatedData,
+        'error' => null
+    ];
+}
+
 // JSON-Response senden
 function jsonResponse($data, $statusCode = 200) {
     http_response_code($statusCode);

@@ -1,5 +1,6 @@
 <?php
 require_once '../config.php';
+setSecurityHeaders();
 requireAdmin();
 
 // Sessions abrufen (nur eigene Sessions)
