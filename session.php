@@ -23,6 +23,9 @@ if (!$session) {
 $dimensions = json_decode($session['dimensions'], true);
 $chartColor = $session['chart_color'] ?? '#7ab800';
 
+// CSRF-Token generieren für Formulare
+$csrfToken = generateCSRFToken();
+
 // Farbe für CSS-Variablen konvertieren (RGB)
 function hexToRgb($hex) {
     $hex = ltrim($hex, '#');
@@ -52,11 +55,15 @@ $participantCount = $stmt->fetch()['count'];
 
 // Form verarbeiten
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
-    $participantName = trim($_POST['participant_name'] ?? '');
-    $values = $_POST['values'] ?? [];
-    
-    // Validierung
-    if (count($values) === count($dimensions)) {
+    // CSRF-Token validieren
+    if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
+        $error = 'Ungültiger Sicherheits-Token. Bitte lade die Seite neu und versuche es erneut.';
+    } else {
+        $participantName = trim($_POST['participant_name'] ?? '');
+        $values = $_POST['values'] ?? [];
+
+        // Validierung
+        if (count($values) === count($dimensions)) {
         $validValues = true;
         foreach ($values as $val) {
             if (!is_numeric($val) || $val < $session['scale_min'] || $val > $session['scale_max']) {
@@ -77,11 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
             } catch (Exception $e) {
                 $error = 'Fehler beim Speichern. Bitte versuche es erneut.';
             }
+            } else {
+                $error = 'Ungültige Werte eingegeben.';
+            }
         } else {
-            $error = 'Ungültige Werte eingegeben.';
+            $error = 'Bitte fülle alle Dimensionen aus.';
         }
-    } else {
-        $error = 'Bitte fülle alle Dimensionen aus.';
     }
 }
 ?>
@@ -342,6 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
         <?php if (!$success): ?>
             <div class="card">
                 <form method="POST" id="valuesForm">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
                     <div class="form-group">
                         <label for="participant_name">Dein Name (optional)</label>
                         <input type="text" id="participant_name" name="participant_name" placeholder="z.B. Max Mustermann">
