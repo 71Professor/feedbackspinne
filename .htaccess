@@ -1,0 +1,86 @@
+# ========================================
+# Feedbackspinne - Apache Security Configuration
+# Addresses SECURITY_AUDIT.md Issue #8
+# ========================================
+
+# Disable directory listing
+Options -Indexes
+
+# ========================================
+# HTTPS Enforcement
+# ========================================
+# Redirect all HTTP traffic to HTTPS
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+</IfModule>
+
+# ========================================
+# Sensitive File Protection
+# ========================================
+
+# Block access to .env files
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+# Block access to .git directory and files
+<DirectoryMatch "\.git">
+    Require all denied
+</DirectoryMatch>
+
+# Block access to SQL files, backups, and logs
+<FilesMatch "\.(sql|bak|backup|old|log|swp|swo|tmp)$">
+    Require all denied
+</FilesMatch>
+
+# Block access to hidden files (dotfiles) in general
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Explicit deny for common sensitive files
+<FilesMatch "(^\.env.*|^\.git.*|composer\.json|composer\.lock|package\.json|package-lock\.json|\.htaccess|\.htpasswd|\.ini|\.conf)$">
+    Require all denied
+</FilesMatch>
+
+# ========================================
+# Additional Security Headers
+# ========================================
+# These complement the protections and help with defense in depth
+
+<IfModule mod_headers.c>
+    # Prevent MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
+
+    # Prevent clickjacking
+    Header set X-Frame-Options "DENY"
+
+    # Strict referrer policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Remove server signature
+    Header unset X-Powered-By
+    Header unset Server
+</IfModule>
+
+# ========================================
+# PHP Security Settings
+# ========================================
+# Disable PHP execution in upload directories if applicable
+# Adjust paths based on your upload directory structure
+<IfModule mod_php.c>
+    php_flag display_errors off
+    php_flag log_errors on
+</IfModule>
+
+# ========================================
+# File Upload Protection
+# ========================================
+# If you have upload directories, add additional rules like:
+# <Directory "/path/to/uploads">
+#     php_flag engine off
+#     RemoveHandler .php .phtml .php3
+#     RemoveType .php .phtml .php3
+# </Directory>
