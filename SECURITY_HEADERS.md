@@ -21,20 +21,22 @@ The application now implements defense-in-depth security measures through:
 ```
 Content-Security-Policy:
   default-src 'self';
-  script-src 'self' https://cdnjs.cloudflare.com;
+  script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
   style-src 'self' 'unsafe-inline';
   img-src 'self' data:;
   font-src 'self';
-  connect-src 'self';
+  connect-src 'self' https://cdnjs.cloudflare.com;
   frame-ancestors 'none';
   base-uri 'self';
   form-action 'self'
 ```
 
 **Key Directives**:
-- `script-src`: Only allows scripts from the application itself and cdnjs.cloudflare.com
+- `script-src 'unsafe-inline'`: Required for inline chart initialization scripts (server-generated, input-sanitized)
+- `script-src https://cdnjs.cloudflare.com`: Allows external CDN scripts with SRI validation
 - `style-src 'unsafe-inline'`: Required for dynamic color theming (acceptable risk for this use case)
 - `img-src data:`: Allows data URIs for chart export functionality
+- `connect-src https://cdnjs.cloudflare.com`: Allows loading source maps from CDN (development aid)
 - `frame-ancestors 'none'`: Prevents the application from being embedded in iframes (clickjacking protection)
 
 ### 2. X-Content-Type-Options
@@ -205,7 +207,22 @@ To test script blocking:
 
 ## Security Trade-offs
 
-### Inline Styles (`'unsafe-inline'`)
+### Inline Scripts (`'unsafe-inline'` in script-src)
+
+**Why**: The application uses inline JavaScript for chart initialization and configuration.
+
+**Risk**: Allows any inline scripts, including malicious ones from XSS attacks.
+
+**Mitigation**:
+- All user input is sanitized with `htmlspecialchars()`
+- Chart data is JSON-encoded and properly escaped
+- Color values are validated with `sanitizeChartColor()`
+- Scripts are server-generated with controlled, sanitized data only
+- No direct user input is ever passed to inline scripts
+
+**Future improvement**: Extract inline scripts to separate .js files or use CSP nonces for inline scripts.
+
+### Inline Styles (`'unsafe-inline'` in style-src)
 
 **Why**: The application uses dynamic color theming via PHP-generated inline styles.
 
