@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $scaleMin = (int)($_POST['scale_min'] ?? 1);
         $scaleMax = (int)($_POST['scale_max'] ?? 10);
-        $chartColor = trim($_POST['chart_color'] ?? '#7ab800');
+        $chartColor = sanitizeChartColor(trim($_POST['chart_color'] ?? '#7ab800'));
         $dimensionNames = $_POST['dimension_names'] ?? [];
         $dimensionLefts = $_POST['dimension_lefts'] ?? [];
         $dimensionRights = $_POST['dimension_rights'] ?? [];
