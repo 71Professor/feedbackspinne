@@ -27,6 +27,9 @@ tmp/
 temp/
 cache/
 
-# Composer (falls später verwendet)
+# Composer
 /vendor/
 composer.lock
+
+# Auth – Logs
+auth/security.log
