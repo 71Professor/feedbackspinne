@@ -139,7 +139,7 @@ document.getElementById('form-register').addEventListener('submit', async e => {
   setLoading(btn, false);
   if (res.success) {
     showAlert('register-alert', res.message, 'success');
-    setTimeout(() => showView('login'), 5000);
+    setTimeout(() => showView('login'), 10000);
   } else {
     showAlert('register-alert', res.message, 'error');
   }
