@@ -618,6 +618,14 @@ function isAdminLoggedIn() {
 
 // Admin-Zugriff erzwingen
 function requireAdmin() {
+    // Falls nur die Auth-Session (fs_user) gesetzt ist, Admin-Session daraus ableiten
+    if (!isAdminLoggedIn()
+        && isset($_SESSION['fs_user']) && $_SESSION['fs_user'] === true
+        && isset($_SESSION['user_id'])) {
+        $_SESSION[ADMIN_SESSION_NAME] = true;
+        $_SESSION['admin_id']         = $_SESSION['user_id'];
+    }
+
     if (!isAdminLoggedIn()) {
         header('Location: /admin/index.php');
         exit;

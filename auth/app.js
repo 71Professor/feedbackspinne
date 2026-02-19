@@ -84,13 +84,12 @@ let currentUser = null;
 
 async function checkSession() {
   try {
+    const params = new URLSearchParams(window.location.search);
     const data = await apiCall('me', null, 'GET');
-    if (data.success) {
+    if (data.success && params.get('view') !== 'register') {
       // Bereits eingeloggt: direkt zum Admin-Bereich weiterleiten
       window.location.href = '../admin/dashboard.php';
     } else {
-      const params = new URLSearchParams(window.location.search);
-
       // E-Mail-Verifikationslink verarbeiten
       const verifyToken = params.get('verify_email');
       if (verifyToken) {
