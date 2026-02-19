@@ -174,9 +174,7 @@ function sendMail(string $toEmail, string $toName, string $subject, string $html
         $mail->send();
         return true;
     } catch (MailerException $e) {
-        if (defined('DEBUG_MODE') && DEBUG_MODE) {
-            error_log('Mailer error: ' . $e->getMessage());
-        }
+        error_log('Mailer error: ' . $e->getMessage());
         return false;
     }
 }

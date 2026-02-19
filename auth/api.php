@@ -114,9 +114,12 @@ function handleRegister(array $body): void {
     ")->execute([$userId, $token, $expires]);
 
     // Verifikations-E-Mail senden
-    sendVerificationEmail($email, $username, $token);
+    $mailSent = sendVerificationEmail($email, $username, $token);
+    if (!$mailSent) {
+        logSecurityEvent('register_mail_failed', "username={$username} email={$email}", $userId);
+    }
 
-    logSecurityEvent('register_success', "username={$username}", $userId);
+    logSecurityEvent('register_success', "username={$username} mail_sent=" . ($mailSent ? '1' : '0'), $userId);
     apiSuccess('Registrierung erfolgreich! Bitte prüfe deine E-Mails und bestätige deine E-Mail-Adresse.', [
         'email' => $email,
     ]);
