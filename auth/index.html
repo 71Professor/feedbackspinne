@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konto – Feedbackspinne</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="auth-wrap">
+
+  <!-- Branding -->
+  <div class="brand">
+    <img src="../favicon.svg" alt="Feedbackspinne Logo">
+    <span>Feedbackspinne</span>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       VIEW: LOGIN
+  ════════════════════════════════════════════ -->
+  <div id="view-login" class="card auth-view active">
+    <h2>Anmelden</h2>
+    <p class="subtitle">Melde dich mit deinem Konto an.</p>
+
+    <div id="login-alert" class="alert"></div>
+
+    <form id="form-login" novalidate>
+      <div class="form-group">
+        <label for="login-identifier">Benutzername oder E-Mail</label>
+        <input type="text" id="login-identifier" name="identifier"
+               autocomplete="username" required placeholder="benutzername oder name@example.com">
+      </div>
+      <div class="form-group">
+        <label for="login-password">Passwort</label>
+        <input type="password" id="login-password" name="password"
+               autocomplete="current-password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-primary">Anmelden</button>
+    </form>
+
+    <div class="nav-links">
+      <button class="nav-link" data-goto="forgot">Passwort vergessen?</button>
+      <span>Noch kein Konto?
+        <button class="nav-link" data-goto="register">Jetzt registrieren</button>
+      </span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       VIEW: REGISTER
+  ════════════════════════════════════════════ -->
+  <div id="view-register" class="card auth-view">
+    <h2>Registrieren</h2>
+    <p class="subtitle">Erstelle ein neues Konto.</p>
+
+    <div id="register-alert" class="alert"></div>
+
+    <form id="form-register" novalidate>
+      <div class="form-group">
+        <label for="reg-username">Benutzername</label>
+        <input type="text" id="reg-username" name="username"
+               autocomplete="username" required
+               placeholder="max_mustermann" minlength="3" maxlength="50">
+      </div>
+      <div class="form-group">
+        <label for="reg-email">E-Mail</label>
+        <input type="email" id="reg-email" name="email"
+               autocomplete="email" required placeholder="name@example.com">
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Passwort</label>
+        <input type="password" id="reg-password" name="password"
+               autocomplete="new-password" required placeholder="••••••••">
+        <div class="pw-meter"><div class="pw-meter-fill" id="reg-pw-fill" style="width:0"></div></div>
+        <div class="pw-hint">Min. 8 Zeichen, Groß- &amp; Kleinbuchstabe, Zahl und Sonderzeichen.</div>
+      </div>
+      <button type="submit" class="btn btn-primary">Konto erstellen</button>
+    </form>
+
+    <div class="nav-links">
+      <span>Bereits ein Konto?
+        <button class="nav-link" data-goto="login">Anmelden</button>
+      </span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       VIEW: FORGOT PASSWORD
+  ════════════════════════════════════════════ -->
+  <div id="view-forgot" class="card auth-view">
+    <h2>Passwort vergessen</h2>
+    <p class="subtitle">Gib deine E-Mail ein – wir senden dir einen Reset-Link.</p>
+
+    <div id="forgot-alert" class="alert"></div>
+
+    <form id="form-forgot" novalidate>
+      <div class="form-group">
+        <label for="forgot-email">E-Mail-Adresse</label>
+        <input type="email" id="forgot-email" name="email"
+               autocomplete="email" required placeholder="name@example.com">
+      </div>
+      <button type="submit" class="btn btn-primary">Reset-Link senden</button>
+    </form>
+
+    <div class="nav-links">
+      <button class="nav-link" data-goto="login">← Zurück zur Anmeldung</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       VIEW: RESET PASSWORD
+  ════════════════════════════════════════════ -->
+  <div id="view-reset" class="card auth-view">
+    <h2>Neues Passwort setzen</h2>
+    <p class="subtitle">Wähle ein neues sicheres Passwort.</p>
+
+    <div id="reset-alert" class="alert"></div>
+
+    <!-- Hidden token field – filled by app.js from URL param -->
+    <input type="hidden" id="reset-token-input">
+
+    <form id="form-reset" novalidate>
+      <div class="form-group">
+        <label for="reset-password">Neues Passwort</label>
+        <input type="password" id="reset-password" name="password"
+               autocomplete="new-password" required placeholder="••••••••">
+        <div class="pw-meter"><div class="pw-meter-fill" id="reset-pw-fill" style="width:0"></div></div>
+        <div class="pw-hint">Min. 8 Zeichen, Groß- &amp; Kleinbuchstabe, Zahl und Sonderzeichen.</div>
+      </div>
+      <button type="submit" class="btn btn-primary">Passwort speichern</button>
+    </form>
+
+    <div class="nav-links">
+      <button class="nav-link" data-goto="login">← Zurück zur Anmeldung</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       VIEW: CHANGE PASSWORD (requires login)
+  ════════════════════════════════════════════ -->
+  <div id="view-change-password" class="card auth-view">
+    <h2>Passwort ändern</h2>
+    <p class="subtitle">Aktuelles und neues Passwort eingeben.</p>
+
+    <div id="change-alert" class="alert"></div>
+
+    <form id="form-change-password" novalidate>
+      <div class="form-group">
+        <label for="change-old-password">Aktuelles Passwort</label>
+        <input type="password" id="change-old-password" name="old_password"
+               autocomplete="current-password" required placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label for="change-new-password">Neues Passwort</label>
+        <input type="password" id="change-new-password" name="new_password"
+               autocomplete="new-password" required placeholder="••••••••">
+        <div class="pw-meter"><div class="pw-meter-fill" id="change-pw-fill" style="width:0"></div></div>
+        <div class="pw-hint">Min. 8 Zeichen, Groß- &amp; Kleinbuchstabe, Zahl und Sonderzeichen.</div>
+      </div>
+      <button type="submit" class="btn btn-primary">Passwort ändern</button>
+    </form>
+
+    <div class="nav-links">
+      <button class="nav-link" data-goto="dashboard">← Zurück</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       VIEW: DASHBOARD (logged in)
+  ════════════════════════════════════════════ -->
+  <div id="view-dashboard" class="card auth-view">
+    <h2>Mein Konto</h2>
+    <p class="subtitle">Eingeloggt als:</p>
+
+    <div class="user-bar">
+      <div>
+        <div class="name" id="dash-username"></div>
+        <div class="email" id="dash-email"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn btn-ghost" data-goto="changePassword">🔑 Passwort ändern</button>
+      <button id="btn-logout" class="btn btn-primary">Abmelden</button>
+    </div>
+
+    <div class="divider">oder</div>
+
+    <a href="../" class="btn btn-ghost">← Zur Feedbackspinne</a>
+  </div>
+
+</div><!-- /.auth-wrap -->
+
+<script src="app.js"></script>
+</body>
+</html>

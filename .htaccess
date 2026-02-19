@@ -44,6 +44,16 @@ RedirectMatch 404 /\.git
     Require all denied
 </FilesMatch>
 
+# Block direct web access to auth/setup.php (run via CLI only)
+<FilesMatch "^setup\.php$">
+    Require local
+</FilesMatch>
+
+# Block direct web access to test_auth.php in production
+<FilesMatch "^test_auth\.php$">
+    Require local
+</FilesMatch>
+
 # ========================================
 # Security Headers
 # ========================================
