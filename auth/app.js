@@ -89,8 +89,20 @@ async function checkSession() {
       // Bereits eingeloggt: direkt zum Admin-Bereich weiterleiten
       window.location.href = '../admin/dashboard.php';
     } else {
-      // Check URL for reset token
       const params = new URLSearchParams(window.location.search);
+
+      // E-Mail-Verifikationslink verarbeiten
+      const verifyToken = params.get('verify_email');
+      if (verifyToken) {
+        showView('login');
+        const vRes = await apiCall('verifyEmail', { token: verifyToken });
+        showAlert('login-alert', vRes.message, vRes.success ? 'success' : 'error');
+        // Token aus URL entfernen
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+      }
+
+      // Passwort-Reset-Link verarbeiten
       if (params.get('page') === 'reset' && params.get('token')) {
         document.getElementById('reset-token-input').value = params.get('token');
         showView('reset');
@@ -153,7 +165,28 @@ document.getElementById('form-login').addEventListener('submit', async e => {
     window.location.href = '../admin/dashboard.php';
   } else {
     showAlert('login-alert', res.message, 'error');
+    // Bei unverifizierter E-Mail Resend-Sektion einblenden
+    if (res.email_unverified) {
+      document.getElementById('resend-email-input').value = res.email || '';
+      document.getElementById('resend-section').style.display = 'block';
+    } else {
+      document.getElementById('resend-section').style.display = 'none';
+    }
   }
+});
+
+// ── RESEND VERIFICATION EMAIL ─────────────────────────────────────────────────
+document.getElementById('form-resend').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearAlert('resend-alert');
+  const btn   = e.target.querySelector('button[type=submit]');
+  const email = document.getElementById('resend-email-input').value;
+  setLoading(btn, true);
+
+  const res = await apiCall('resendVerificationEmail', { email });
+
+  setLoading(btn, false);
+  showAlert('resend-alert', res.message, 'success');
 });
 
 // ── LOGOUT ────────────────────────────────────────────────────────────────────

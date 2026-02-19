@@ -40,6 +40,18 @@
       <button type="submit" class="btn btn-primary">Anmelden</button>
     </form>
 
+    <!-- Resend-Verifikation (wird eingeblendet bei 403-Login-Fehler) -->
+    <div id="resend-section" style="display:none;margin-top:16px;">
+      <div id="resend-alert" class="alert"></div>
+      <p style="font-size:14px;color:#64748b;margin:0 0 8px;">
+        Noch keine Bestätigungs-E-Mail erhalten?
+      </p>
+      <form id="form-resend" novalidate>
+        <input type="hidden" id="resend-email-input">
+        <button type="submit" class="btn btn-ghost" style="width:100%;">Bestätigungs-E-Mail erneut senden</button>
+      </form>
+    </div>
+
     <div class="nav-links">
       <button class="nav-link" data-goto="forgot">Passwort vergessen?</button>
       <span>Noch kein Konto?
