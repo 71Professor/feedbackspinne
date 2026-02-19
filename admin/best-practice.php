@@ -14,7 +14,7 @@ $markdownContent = file_exists($markdownFile) ? file_get_contents($markdownFile)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Best Practice - Feedback-Gestaltung</title>
     <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="js/marked.min.js"></script>
     <style>
         :root {
             --green: #7ab800;
