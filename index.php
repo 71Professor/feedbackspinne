@@ -159,6 +159,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
             margin-top: 24px;
             padding-top: 24px;
             border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
         }
         .admin-link a {
             color: var(--muted);
@@ -210,7 +214,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
             </div>
             
             <div class="admin-link">
-                <a href="admin/">👤 Admin-Bereich</a>
+                <a href="auth/">✏️ Konto erstellen</a>
+                <a href="admin/">👤 Anmelden</a>
             </div>
         </div>
     </div>

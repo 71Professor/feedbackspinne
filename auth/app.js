@@ -86,9 +86,8 @@ async function checkSession() {
   try {
     const data = await apiCall('me', null, 'GET');
     if (data.success) {
-      currentUser = data.data.user;
-      renderDashboard();
-      showView('dashboard');
+      // Bereits eingeloggt: direkt zum Admin-Bereich weiterleiten
+      window.location.href = '../admin/dashboard.php';
     } else {
       // Check URL for reset token
       const params = new URLSearchParams(window.location.search);
@@ -150,9 +149,8 @@ document.getElementById('form-login').addEventListener('submit', async e => {
 
   setLoading(btn, false);
   if (res.success) {
-    currentUser = res.data.user;
-    renderDashboard();
-    showView('dashboard');
+    // Nach erfolgreichem Login zum Admin-Bereich weiterleiten
+    window.location.href = '../admin/dashboard.php';
   } else {
     showAlert('login-alert', res.message, 'error');
   }
