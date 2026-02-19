@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alert-Playground – Feedbackspinne</title>
+<style>
+  /* ── Aktuelle Werte aus auth/styles.css ── */
+  :root {
+    --blue:     #075985;
+    --blue-bg:  #f0f9ff;
+    --blue-bdr: #bae6fd;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f1f5f9;
+    color: #0f172a;
+    min-height: 100vh;
+    padding: 32px 20px;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #0f172a;
+  }
+  .subtitle {
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 28px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 700px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* ── Panel ── */
+  .panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(15,23,42,.06);
+  }
+
+  .panel h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #64748b;
+    margin-bottom: 18px;
+  }
+
+  /* ── Controls ── */
+  .control-group {
+    margin-bottom: 16px;
+  }
+  .control-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 5px;
+  }
+  .control-group label span {
+    font-family: monospace;
+    font-weight: 400;
+    font-size: 12px;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .row input[type=color] {
+    width: 40px;
+    height: 34px;
+    padding: 2px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #fff;
+    flex-shrink: 0;
+  }
+  .row input[type=text],
+  .row input[type=number],
+  .row select {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: monospace;
+    color: #0f172a;
+    outline: none;
+    background: #fff;
+  }
+  .row input[type=range] {
+    flex: 1;
+    accent-color: #7ab800;
+  }
+  .row input:focus, .row select:focus {
+    border-color: #7ab800;
+    box-shadow: 0 0 0 2px rgba(122,184,0,.15);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 18px 0;
+  }
+
+  /* ── Preview ── */
+  .preview-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .preview-box {
+    background: linear-gradient(160deg, #f0f7e6 0%, #f8fafc 40%, #ffffff 100%);
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 32px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #alert-preview {
+    width: 100%;
+    max-width: 380px;
+  }
+
+  /* ── CSS Output ── */
+  .css-output {
+    position: relative;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #334155;
+    color: #cbd5e1;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .copy-btn:hover { background: #475569; }
+  .copy-btn.copied { background: #166534; color: #bbf7d0; }
+
+  .reset-btn {
+    width: 100%;
+    margin-top: 4px;
+    padding: 9px;
+    background: #f1f5f9;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .reset-btn:hover { background: #e2e8f0; color: #374151; }
+</style>
+</head>
+<body>
+
+<div style="max-width:900px;margin:0 auto 20px;">
+  <h1>Alert-Playground</h1>
+  <p class="subtitle">Passe das Aussehen der Erfolgsmeldung an – Änderungen werden sofort angezeigt.</p>
+</div>
+
+<div class="layout">
+
+  <!-- ── Steuerung ── -->
+  <div class="panel">
+    <h2>Einstellungen</h2>
+
+    <!-- Farben -->
+    <div class="control-group">
+      <label>Textfarbe <span id="lbl-color">#075985</span></label>
+      <div class="row">
+        <input type="color" id="ctrl-color" value="#075985">
+        <input type="text" id="ctrl-color-hex" value="#075985" maxlength="9">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Hintergrundfarbe <span id="lbl-bg">#f0f9ff</span></label>
+      <div class="row">
+        <input type="color" id="ctrl-bg" value="#f0f9ff">
+        <input type="text" id="ctrl-bg-hex" value="#f0f9ff" maxlength="9">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Rahmenfarbe <span id="lbl-bdr">#bae6fd</span></label>
+      <div class="row">
+        <input type="color" id="ctrl-bdr" value="#bae6fd">
+        <input type="text" id="ctrl-bdr-hex" value="#bae6fd" maxlength="9">
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Rahmen -->
+    <div class="control-group">
+      <label>Rahmenbreite <span id="lbl-bdr-width">1px</span></label>
+      <div class="row">
+        <input type="range" id="ctrl-bdr-width" min="0" max="8" step="0.5" value="1">
+        <input type="number" id="ctrl-bdr-width-num" value="1" min="0" max="8" step="0.5" style="width:64px;flex:none;">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Rahmenart</label>
+      <div class="row">
+        <select id="ctrl-bdr-style">
+          <option value="solid" selected>solid</option>
+          <option value="dashed">dashed</option>
+          <option value="dotted">dotted</option>
+          <option value="double">double</option>
+          <option value="none">none</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Ecken-Rundung (border-radius) <span id="lbl-radius">10px</span></label>
+      <div class="row">
+        <input type="range" id="ctrl-radius" min="0" max="32" step="1" value="10">
+        <input type="number" id="ctrl-radius-num" value="10" min="0" max="32" style="width:64px;flex:none;">
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Schrift -->
+    <div class="control-group">
+      <label>Schriftgröße <span id="lbl-fontsize">13.5px</span></label>
+      <div class="row">
+        <input type="range" id="ctrl-fontsize" min="10" max="24" step="0.5" value="13.5">
+        <input type="number" id="ctrl-fontsize-num" value="13.5" min="10" max="24" step="0.5" style="width:64px;flex:none;">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Schriftgewicht</label>
+      <div class="row">
+        <select id="ctrl-fontweight">
+          <option value="400" selected>400 – Normal</option>
+          <option value="500">500 – Medium</option>
+          <option value="600">600 – Semibold</option>
+          <option value="700">700 – Bold</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Schriftart</label>
+      <div class="row">
+        <select id="ctrl-fontfamily">
+          <option value="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" selected>System-UI (Standard)</option>
+          <option value="Georgia, 'Times New Roman', serif">Georgia (Serif)</option>
+          <option value="'Courier New', Courier, monospace">Courier (Monospace)</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="Verdana, sans-serif">Verdana</option>
+        </select>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Innenabstand -->
+    <div class="control-group">
+      <label>Innenabstand oben/unten <span id="lbl-py">11px</span></label>
+      <div class="row">
+        <input type="range" id="ctrl-py" min="4" max="30" step="1" value="11">
+        <input type="number" id="ctrl-py-num" value="11" min="4" max="30" style="width:64px;flex:none;">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Innenabstand links/rechts <span id="lbl-px">15px</span></label>
+      <div class="row">
+        <input type="range" id="ctrl-px" min="4" max="40" step="1" value="15">
+        <input type="number" id="ctrl-px-num" value="15" min="4" max="40" style="width:64px;flex:none;">
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="resetAll()">↺ Auf Standardwerte zurücksetzen</button>
+  </div>
+
+  <!-- ── Vorschau + CSS ── -->
+  <div class="preview-wrap">
+    <div class="panel">
+      <h2>Vorschau</h2>
+      <div class="preview-box">
+        <div id="alert-preview" class="alert alert-success show">
+          Registrierung erfolgreich! Bitte prüfe deine E-Mails und bestätige deine E-Mail-Adresse.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel css-output">
+      <h2>Generiertes CSS</h2>
+      <button class="copy-btn" id="copy-btn" onclick="copyCss()">Kopieren</button>
+      <pre id="css-out"></pre>
+      <p style="margin-top:12px;font-size:12px;color:#64748b;">
+        Diese Werte in <strong>auth/styles.css</strong> bei <code>.alert</code> und <code>.alert-success</code> eintragen (Zeile 156–166).
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Minimale Alert-Basis-Styles -->
+<style>
+  .alert {
+    display: none;
+    line-height: 1.55;
+  }
+  .alert.show { display: block; }
+</style>
+
+<script>
+  // ── Aktueller State ──
+  const defaults = {
+    color:      '#075985',
+    bg:         '#f0f9ff',
+    bdr:        '#bae6fd',
+    bdrWidth:   1,
+    bdrStyle:   'solid',
+    radius:     10,
+    fontSize:   13.5,
+    fontWeight: '400',
+    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+    py:         11,
+    px:         15,
+  };
+
+  let s = { ...defaults };
+
+  // ── Vorschau aktualisieren ──
+  function update() {
+    const el = document.getElementById('alert-preview');
+    el.style.color        = s.color;
+    el.style.background   = s.bg;
+    el.style.border       = `${s.bdrWidth}px ${s.bdrStyle} ${s.bdr}`;
+    el.style.borderRadius = `${s.radius}px`;
+    el.style.fontSize     = `${s.fontSize}px`;
+    el.style.fontWeight   = s.fontWeight;
+    el.style.fontFamily   = s.fontFamily;
+    el.style.padding      = `${s.py}px ${s.px}px`;
+
+    // Labels aktualisieren
+    document.getElementById('lbl-color').textContent    = s.color;
+    document.getElementById('lbl-bg').textContent       = s.bg;
+    document.getElementById('lbl-bdr').textContent      = s.bdr;
+    document.getElementById('lbl-bdr-width').textContent = s.bdrWidth + 'px';
+    document.getElementById('lbl-radius').textContent   = s.radius + 'px';
+    document.getElementById('lbl-fontsize').textContent = s.fontSize + 'px';
+    document.getElementById('lbl-py').textContent       = s.py + 'px';
+    document.getElementById('lbl-px').textContent       = s.px + 'px';
+
+    updateCss();
+  }
+
+  // ── CSS-Ausgabe ──
+  function updateCss() {
+    const fontFamilyShort = s.fontFamily.length > 40
+      ? s.fontFamily.split(',')[0].trim()
+      : s.fontFamily;
+
+    const css =
+`.alert {
+  padding: ${s.py}px ${s.px}px;
+  border-radius: ${s.radius}px;
+  font-size: ${s.fontSize}px;
+  font-weight: ${s.fontWeight};
+  font-family: ${s.fontFamily};
+  line-height: 1.55;
+  margin-bottom: 18px;
+  display: none;
+}
+.alert.show { display: block; }
+
+.alert-success {
+  background: ${s.bg};
+  border: ${s.bdrWidth}px ${s.bdrStyle} ${s.bdr};
+  color: ${s.color};
+}`;
+    document.getElementById('css-out').textContent = css;
+  }
+
+  // ── Hilfsfunktion: Range + Number synchron halten ──
+  function bindRangeNumber(rangeId, numId, key) {
+    const range = document.getElementById(rangeId);
+    const num   = document.getElementById(numId);
+    range.addEventListener('input', () => {
+      s[key] = parseFloat(range.value);
+      num.value = range.value;
+      update();
+    });
+    num.addEventListener('input', () => {
+      s[key] = parseFloat(num.value);
+      range.value = num.value;
+      update();
+    });
+  }
+
+  // ── Hilfsfunktion: Color-Picker + Hex-Feld synchron halten ──
+  function bindColor(pickerId, hexId, key, lblId) {
+    const picker = document.getElementById(pickerId);
+    const hex    = document.getElementById(hexId);
+    picker.addEventListener('input', () => {
+      s[key] = picker.value;
+      hex.value = picker.value;
+      update();
+    });
+    hex.addEventListener('input', () => {
+      const v = hex.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(v) || /^#[0-9a-fA-F]{3}$/.test(v)) {
+        s[key] = v;
+        picker.value = v;
+        update();
+      }
+    });
+  }
+
+  // ── Bindings ──
+  bindColor('ctrl-color', 'ctrl-color-hex', 'color', 'lbl-color');
+  bindColor('ctrl-bg',    'ctrl-bg-hex',    'bg',    'lbl-bg');
+  bindColor('ctrl-bdr',   'ctrl-bdr-hex',   'bdr',   'lbl-bdr');
+
+  bindRangeNumber('ctrl-bdr-width', 'ctrl-bdr-width-num', 'bdrWidth');
+  bindRangeNumber('ctrl-radius',    'ctrl-radius-num',    'radius');
+  bindRangeNumber('ctrl-fontsize',  'ctrl-fontsize-num',  'fontSize');
+  bindRangeNumber('ctrl-py',        'ctrl-py-num',        'py');
+  bindRangeNumber('ctrl-px',        'ctrl-px-num',        'px');
+
+  document.getElementById('ctrl-bdr-style').addEventListener('change', function() {
+    s.bdrStyle = this.value;
+    update();
+  });
+  document.getElementById('ctrl-fontweight').addEventListener('change', function() {
+    s.fontWeight = this.value;
+    update();
+  });
+  document.getElementById('ctrl-fontfamily').addEventListener('change', function() {
+    s.fontFamily = this.value;
+    update();
+  });
+
+  // ── Reset ──
+  function resetAll() {
+    s = { ...defaults };
+
+    document.getElementById('ctrl-color').value       = defaults.color;
+    document.getElementById('ctrl-color-hex').value   = defaults.color;
+    document.getElementById('ctrl-bg').value          = defaults.bg;
+    document.getElementById('ctrl-bg-hex').value      = defaults.bg;
+    document.getElementById('ctrl-bdr').value         = defaults.bdr;
+    document.getElementById('ctrl-bdr-hex').value     = defaults.bdr;
+    document.getElementById('ctrl-bdr-width').value   = defaults.bdrWidth;
+    document.getElementById('ctrl-bdr-width-num').value = defaults.bdrWidth;
+    document.getElementById('ctrl-bdr-style').value   = defaults.bdrStyle;
+    document.getElementById('ctrl-radius').value      = defaults.radius;
+    document.getElementById('ctrl-radius-num').value  = defaults.radius;
+    document.getElementById('ctrl-fontsize').value    = defaults.fontSize;
+    document.getElementById('ctrl-fontsize-num').value = defaults.fontSize;
+    document.getElementById('ctrl-fontweight').value  = defaults.fontWeight;
+    document.getElementById('ctrl-fontfamily').value  = defaults.fontFamily;
+    document.getElementById('ctrl-py').value          = defaults.py;
+    document.getElementById('ctrl-py-num').value      = defaults.py;
+    document.getElementById('ctrl-px').value          = defaults.px;
+    document.getElementById('ctrl-px-num').value      = defaults.px;
+
+    update();
+  }
+
+  // ── CSS kopieren ──
+  function copyCss() {
+    const text = document.getElementById('css-out').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = '✓ Kopiert!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Kopieren';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // ── Init ──
+  update();
+</script>
+
+</body>
+</html>
