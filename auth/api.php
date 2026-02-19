@@ -178,11 +178,14 @@ function handleLogin(array $body): void {
 
     // Session regenerieren (Schutz gegen Session-Fixation)
     session_regenerate_id(true);
-    $_SESSION[USER_SESSION_NAME] = true;
-    $_SESSION['user_id']         = $user['id'];
-    $_SESSION['user_username']   = $user['username'];
-    $_SESSION['user_email']      = $user['email'];
-    $_SESSION['last_activity']   = time();
+    $_SESSION[USER_SESSION_NAME]  = true;
+    $_SESSION['user_id']          = $user['id'];
+    $_SESSION['user_username']    = $user['username'];
+    $_SESSION['user_email']       = $user['email'];
+    $_SESSION['last_activity']    = time();
+    // Admin-Session mitsetzen, damit admin/dashboard.php direkt erreichbar ist
+    $_SESSION[ADMIN_SESSION_NAME] = true;
+    $_SESSION['admin_id']         = $user['id'];
 
     logSecurityEvent('login_success', "username={$user['username']}", (int)$user['id']);
     apiSuccess('Login erfolgreich.', [
