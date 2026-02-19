@@ -214,8 +214,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
             </div>
             
             <div class="admin-link">
-                <a href="auth/">✏️ Konto erstellen</a>
-                <a href="admin/">👤 Anmelden</a>
+                <a href="auth/?view=register">✏️ Konto erstellen</a>
+                <a href="auth/">👤 Anmelden</a>
             </div>
         </div>
     </div>

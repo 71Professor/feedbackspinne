@@ -106,6 +106,9 @@ async function checkSession() {
       if (params.get('page') === 'reset' && params.get('token')) {
         document.getElementById('reset-token-input').value = params.get('token');
         showView('reset');
+      } else if (params.get('view') === 'register') {
+        window.history.replaceState({}, '', window.location.pathname);
+        showView('register');
       } else {
         showView('login');
       }
@@ -136,7 +139,7 @@ document.getElementById('form-register').addEventListener('submit', async e => {
   setLoading(btn, false);
   if (res.success) {
     showAlert('register-alert', res.message, 'success');
-    setTimeout(() => showView('login'), 2000);
+    setTimeout(() => showView('login'), 5000);
   } else {
     showAlert('register-alert', res.message, 'error');
   }

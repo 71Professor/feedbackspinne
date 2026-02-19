@@ -245,7 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
 
             <div class="nav-links">
-                Noch kein Konto? <a href="../auth/">Jetzt registrieren</a>
+                Noch kein Konto? <a href="../auth/?view=register">Jetzt registrieren</a>
             </div>
 
         </div>
