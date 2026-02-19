@@ -46,7 +46,7 @@ body {
   margin-bottom: 28px;
   justify-content: center;
 }
-.brand img   { width: 40px; height: 40px; }
+.brand img   { width: 80px; height: 80px; }
 .brand span  { font-size: 22px; font-weight: 700; color: var(--green-2); letter-spacing: -.5px; }
 
 /* ── Card ── */
