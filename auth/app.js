@@ -126,6 +126,12 @@ function renderDashboard() {
 document.getElementById('form-register').addEventListener('submit', async e => {
   e.preventDefault();
   clearAlert('register-alert');
+
+  if (e.target.password.value !== e.target.confirm_password.value) {
+    showAlert('register-alert', 'Die Passwörter stimmen nicht überein.', 'error');
+    return;
+  }
+
   const btn = e.target.querySelector('button[type=submit]');
   setLoading(btn, true);
 
@@ -138,6 +144,8 @@ document.getElementById('form-register').addEventListener('submit', async e => {
   setLoading(btn, false);
   if (res.success) {
     showAlert('register-alert', res.message, 'success');
+    e.target.reset();
+    updateMeter('', 'reg-pw-fill');
     setTimeout(() => showView('login'), 10000);
   } else {
     showAlert('register-alert', res.message, 'error');
@@ -219,6 +227,12 @@ document.getElementById('form-forgot').addEventListener('submit', async e => {
 document.getElementById('form-reset').addEventListener('submit', async e => {
   e.preventDefault();
   clearAlert('reset-alert');
+
+  if (e.target.password.value !== e.target.confirm_password.value) {
+    showAlert('reset-alert', 'Die Passwörter stimmen nicht überein.', 'error');
+    return;
+  }
+
   const btn = e.target.querySelector('button[type=submit]');
   setLoading(btn, true);
 
@@ -230,6 +244,8 @@ document.getElementById('form-reset').addEventListener('submit', async e => {
   setLoading(btn, false);
   if (res.success) {
     showAlert('reset-alert', res.message + ' Du wirst weitergeleitet…', 'success');
+    e.target.reset();
+    updateMeter('', 'reset-pw-fill');
     setTimeout(() => {
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
@@ -248,6 +264,12 @@ document.getElementById('reset-password').addEventListener('input', function () 
 document.getElementById('form-change-password').addEventListener('submit', async e => {
   e.preventDefault();
   clearAlert('change-alert');
+
+  if (e.target.new_password.value !== e.target.confirm_new_password.value) {
+    showAlert('change-alert', 'Die neuen Passwörter stimmen nicht überein.', 'error');
+    return;
+  }
+
   const btn = e.target.querySelector('button[type=submit]');
   setLoading(btn, true);
 
