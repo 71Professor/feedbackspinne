@@ -25,11 +25,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($username && $password) {
             $pdo = getDB();
+            $adminId = null;
+            $adminUsername = null;
+            $loginSuccess = false;
+
+            // 1. Zuerst admin_users prüfen (bestehende Admin-Konten)
             $stmt = $pdo->prepare("SELECT * FROM admin_users WHERE username = ?");
             $stmt->execute([$username]);
-            $user = $stmt->fetch();
+            $adminUser = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password_hash'])) {
+            if ($adminUser && password_verify($password, $adminUser['password_hash'])) {
+                $adminId = $adminUser['id'];
+                $adminUsername = $adminUser['username'];
+                $loginSuccess = true;
+            }
+
+            // 2. Fallback: users-Tabelle prüfen (via /auth/ registrierte Nutzer)
+            if (!$loginSuccess) {
+                $stmt = $pdo->prepare("SELECT * FROM users WHERE (username = ? OR email = ?) AND is_active = 1 LIMIT 1");
+                $stmt->execute([$username, $username]);
+                $regularUser = $stmt->fetch();
+
+                if ($regularUser && password_verify($password, $regularUser['password_hash'])) {
+                    // Admin-Eintrag für diesen Nutzer anlegen falls noch nicht vorhanden
+                    $stmt = $pdo->prepare("SELECT id FROM admin_users WHERE username = ?");
+                    $stmt->execute([$regularUser['username']]);
+                    $linkedAdmin = $stmt->fetch();
+
+                    if (!$linkedAdmin) {
+                        // Platzhalter-Hash: kann nie mit password_verify übereinstimmen
+                        $stmt = $pdo->prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)");
+                        $stmt->execute([$regularUser['username'], '!!auth_user!!']);
+                        $adminId = (int)$pdo->lastInsertId();
+                    } else {
+                        $adminId = $linkedAdmin['id'];
+                    }
+
+                    $adminUsername = $regularUser['username'];
+                    $loginSuccess = true;
+                }
+            }
+
+            if ($loginSuccess) {
                 // Login erfolgreich: Rate Limit zurücksetzen
                 resetRateLimit('admin_login');
 
@@ -37,8 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_regenerate_id(true);
 
                 $_SESSION[ADMIN_SESSION_NAME] = true;
-                $_SESSION['admin_id'] = $user['id'];
-                $_SESSION['admin_username'] = $user['username'];
+                $_SESSION['admin_id'] = $adminId;
+                $_SESSION['admin_username'] = $adminUsername;
                 $_SESSION['last_activity'] = time(); // Für Session-Timeout
 
                 header('Location: dashboard.php');
@@ -163,13 +200,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 13px;
             line-height: 1.6;
         }
+        .nav-links {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .nav-links a {
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .nav-links a:hover {
+            color: var(--green-2);
+        }
     </style>
 </head>
 <body>
     <div class="wrap">
         <div class="card">
             <h1>Admin-Login</h1>
-            <p class="subtitle">Melde dich an, um Sessions zu verwalten.</p>
+            <p class="subtitle">Melde dich an, um Feedback-Sessions zu erstellen und zu verwalten.</p>
             
             <?php if ($error): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
@@ -179,8 +232,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                 
                 <div class="form-group">
-                    <label for="username">Benutzername</label>
-                    <input type="text" id="username" name="username" required autofocus>
+                    <label for="username">Benutzername oder E-Mail</label>
+                    <input type="text" id="username" name="username" required autofocus autocomplete="username">
                 </div>
                 
                 <div class="form-group">
@@ -191,6 +244,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit">Anmelden</button>
             </form>
 
+            <div class="nav-links">
+                Noch kein Konto? <a href="../auth/">Jetzt registrieren</a>
+            </div>
 
         </div>
     </div>
