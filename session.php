@@ -330,6 +330,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
             height: 400px;
             position: relative;
         }
+        .page-footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .page-footer a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+        .page-footer a:hover { color: var(--text); }
     </style>
 </head>
 <body>
@@ -487,5 +504,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
             previewChart.update();
         }
     </script>
+
+    <div class="page-footer">
+        <a href="index.php">Startseite</a>
+        <a href="impressum.php">Impressum</a>
+        <a href="datenschutz.php">Datenschutz</a>
+    </div>
 </body>
 </html>
