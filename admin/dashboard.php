@@ -493,7 +493,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
             <div class="modal-body">
                 <h2>Die Lehrpersonen</h2>
                 <ul>
-                    <li>gehen zu <a href="https://feedbackspinne.de/admin" target="_blank">https://feedbackspinne.de/admin</a></li>
+                    <li>gehen zu <a href="https://feedbackspinne.de/admin" target="_blank">https://feedbackspinne.de/auth</a></li>
                     <li>loggen sich ein mit Benutzername: <code>tester</code> / Passwort: <code>feedbackspinne</code></li>
                     <li>klicken auf "Neue Session"</li>
                     <li>wählen Farbe und Skala</li>
