@@ -36,12 +36,14 @@ if ($method === 'GET' && $action === 'me') {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
     switch ($action) {
-        case 'register':        handleRegister($body);       break;
-        case 'login':           handleLogin($body);           break;
-        case 'logout':          handleLogout();               break;
-        case 'forgot_password': handleForgotPassword($body); break;
-        case 'reset_password':  handleResetPassword($body);  break;
-        case 'change_password': handleChangePassword($body); break;
+        case 'register':                  handleRegister($body);                  break;
+        case 'login':                     handleLogin($body);                     break;
+        case 'logout':                    handleLogout();                         break;
+        case 'forgot_password':           handleForgotPassword($body);           break;
+        case 'reset_password':            handleResetPassword($body);            break;
+        case 'change_password':           handleChangePassword($body);           break;
+        case 'verifyEmail':               handleVerifyEmail($body);               break;
+        case 'resendVerificationEmail':   handleResendVerificationEmail($body);   break;
         default:
             apiError('Unbekannter Endpoint.', 404);
     }
@@ -97,14 +99,27 @@ function handleRegister(array $body): void {
     $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
 
     $stmt = $pdo->prepare("
-        INSERT INTO users (username, email, password_hash)
-        VALUES (?, ?, ?)
+        INSERT INTO users (username, email, password_hash, is_email_verified)
+        VALUES (?, ?, ?, 0)
     ");
     $stmt->execute([$username, $email, $hash]);
     $userId = (int)$pdo->lastInsertId();
 
+    // Verifikations-Token erzeugen und speichern
+    $token   = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', time() + 86400); // 24 Stunden
+    $pdo->prepare("
+        INSERT INTO email_verification_tokens (user_id, token, expires)
+        VALUES (?, ?, ?)
+    ")->execute([$userId, $token, $expires]);
+
+    // Verifikations-E-Mail senden
+    sendVerificationEmail($email, $username, $token);
+
     logSecurityEvent('register_success', "username={$username}", $userId);
-    apiSuccess('Registrierung erfolgreich. Du kannst dich jetzt einloggen.');
+    apiSuccess('Registrierung erfolgreich! Bitte prüfe deine E-Mails und bestätige deine E-Mail-Adresse.', [
+        'email' => $email,
+    ]);
 }
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
@@ -140,6 +155,19 @@ function handleLogin(array $body): void {
         incrementRateLimit('auth_login');
         logSecurityEvent('login_fail', "identifier={$identifier}");
         apiError('Ungültige Anmeldedaten.', 401);
+    }
+
+    // E-Mail-Verifikations-Check
+    if ($user && empty($user['is_email_verified'])) {
+        logSecurityEvent('login_unverified', "identifier={$identifier}", (int)$user['id']);
+        http_response_code(403);
+        echo json_encode([
+            'success'          => false,
+            'message'          => 'Bitte bestätige zuerst deine E-Mail-Adresse. Schau in dein Postfach oder fordere eine neue Bestätigungs-E-Mail an.',
+            'email_unverified' => true,
+            'email'            => $user['email'],
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
     // Erfolg
@@ -302,6 +330,99 @@ function handleChangePassword(array $body): void {
 
     logSecurityEvent('change_password_success', '', $userId);
     apiSuccess('Passwort erfolgreich geändert.');
+}
+
+// ── VERIFY EMAIL ─────────────────────────────────────────────────────────────
+function handleVerifyEmail(array $body): void {
+    if (!checkRateLimit('email_verification', 10, 600)) {
+        apiError('Zu viele Anfragen. Bitte warte kurz.', 429);
+    }
+
+    $token = trim($body['token'] ?? '');
+    if (!$token) {
+        apiError('Ungültiger Verifikationslink.', 422);
+    }
+
+    $pdo  = getDB();
+    $stmt = $pdo->prepare("
+        SELECT evt.*, u.is_email_verified
+        FROM   email_verification_tokens evt
+        JOIN   users u ON u.id = evt.user_id
+        WHERE  evt.token = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$token]);
+    $record = $stmt->fetch();
+
+    if (!$record) {
+        logSecurityEvent('verify_email_invalid_token', "token_prefix=" . substr($token, 0, 8));
+        apiError('Ungültiger oder abgelaufener Verifikationslink.', 400);
+    }
+
+    // Bereits verifiziert?
+    if ($record['is_email_verified']) {
+        apiSuccess('Deine E-Mail-Adresse wurde bereits bestätigt. Du kannst dich jetzt einloggen.');
+    }
+
+    // Token genutzt oder abgelaufen?
+    if ($record['used'] || strtotime($record['expires']) < time()) {
+        logSecurityEvent('verify_email_expired_token', "user_id={$record['user_id']}");
+        apiError('Der Verifikationslink ist abgelaufen oder wurde bereits verwendet. Bitte fordere einen neuen an.', 400);
+    }
+
+    // Verifikation durchführen
+    $pdo->beginTransaction();
+    $pdo->prepare("UPDATE users SET is_email_verified = 1, email_verified_at = NOW() WHERE id = ?")
+        ->execute([$record['user_id']]);
+    $pdo->prepare("UPDATE email_verification_tokens SET used = 1 WHERE id = ?")
+        ->execute([$record['id']]);
+    $pdo->commit();
+
+    logSecurityEvent('verify_email_success', "user_id={$record['user_id']}", (int)$record['user_id']);
+    apiSuccess('Danke! Deine E-Mail-Adresse ist bestätigt. Du kannst dich jetzt einloggen.');
+}
+
+// ── RESEND VERIFICATION EMAIL ─────────────────────────────────────────────────
+function handleResendVerificationEmail(array $body): void {
+    if (!checkRateLimit('resend_verification', 3, 600)) {
+        // Generische Antwort (Anti-Enumeration)
+        apiSuccess('Falls ein unverifiziertes Konto mit dieser E-Mail existiert, wurde eine neue Bestätigungs-E-Mail versendet.');
+    }
+
+    $email = trim($body['email'] ?? '');
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        apiSuccess('Falls ein unverifiziertes Konto mit dieser E-Mail existiert, wurde eine neue Bestätigungs-E-Mail versendet.');
+    }
+
+    $pdo  = getDB();
+    $stmt = $pdo->prepare("SELECT id, username, is_email_verified FROM users WHERE email = ? AND is_active = 1 LIMIT 1");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        // Anti-Enumeration: gleiche Antwort bei unbekannter E-Mail
+        logSecurityEvent('resend_verification_unknown_email', "email={$email}");
+        apiSuccess('Falls ein unverifiziertes Konto mit dieser E-Mail existiert, wurde eine neue Bestätigungs-E-Mail versendet.');
+    }
+
+    if ($user['is_email_verified']) {
+        apiError('Diese E-Mail-Adresse ist bereits bestätigt.', 409);
+    }
+
+    // Alte Tokens des Users löschen und neuen erstellen
+    $pdo->prepare("DELETE FROM email_verification_tokens WHERE user_id = ?")->execute([$user['id']]);
+
+    $token   = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', time() + 86400);
+    $pdo->prepare("
+        INSERT INTO email_verification_tokens (user_id, token, expires)
+        VALUES (?, ?, ?)
+    ")->execute([$user['id'], $token, $expires]);
+
+    sendVerificationEmail($email, $user['username'], $token);
+    logSecurityEvent('resend_verification_sent', "email={$email}", (int)$user['id']);
+
+    apiSuccess('Falls ein unverifiziertes Konto mit dieser E-Mail existiert, wurde eine neue Bestätigungs-E-Mail versendet.');
 }
 
 // ── ME ────────────────────────────────────────────────────────────────────────

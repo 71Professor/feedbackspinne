@@ -103,6 +103,57 @@ HTML;
 }
 
 /**
+ * Send an e-mail-verification e-mail.
+ *
+ * @param string $toEmail  Recipient e-mail
+ * @param string $toName   Recipient name (username)
+ * @param string $token    Raw (plain) verification token
+ * @return bool
+ */
+function sendVerificationEmail(string $toEmail, string $toName, string $token): bool {
+    $appUrl     = rtrim(getenv('APP_URL') ?: '', '/');
+    $verifyUrl  = $appUrl . '/auth/?verify_email=' . urlencode($token);
+
+    $subject = 'E-Mail-Adresse bestätigen – Feedbackspinne';
+
+    $html = <<<HTML
+<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="UTF-8"><title>{$subject}</title></head>
+<body style="font-family:ui-sans-serif,system-ui,Arial,sans-serif;background:#f8fafc;margin:0;padding:40px 20px;">
+  <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:40px;">
+    <img src="{$appUrl}/favicon.svg" alt="Feedbackspinne" width="48" style="margin-bottom:16px;">
+    <h2 style="margin:0 0 8px;color:#0f172a;">E-Mail-Adresse bestätigen</h2>
+    <p style="color:#64748b;margin:0 0 24px;">Hallo {$toName},<br>
+       bitte bestätige deine E-Mail-Adresse, um deinen Account zu aktivieren.</p>
+    <a href="{$verifyUrl}"
+       style="display:inline-block;background:#7ab800;color:#fff;text-decoration:none;
+              padding:14px 28px;border-radius:10px;font-weight:600;font-size:15px;">
+      E-Mail-Adresse bestätigen
+    </a>
+    <p style="color:#94a3b8;font-size:13px;margin:24px 0 0;">
+      Dieser Link ist <strong>24 Stunden</strong> gültig.<br>
+      Falls du dich nicht registriert hast, kannst du diese E-Mail ignorieren.
+    </p>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+    <p style="color:#cbd5e1;font-size:12px;margin:0;">
+      Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:<br>
+      <a href="{$verifyUrl}" style="color:#7ab800;word-break:break-all;">{$verifyUrl}</a>
+    </p>
+  </div>
+</body>
+</html>
+HTML;
+
+    $text = "E-Mail-Adresse bestätigen – Feedbackspinne\n\n"
+          . "Hallo {$toName},\n\n"
+          . "bitte bestätige deine E-Mail-Adresse über folgenden Link (gültig 24 Stunden):\n{$verifyUrl}\n\n"
+          . "Falls du dich nicht registriert hast, ignoriere diese E-Mail.";
+
+    return sendMail($toEmail, $toName, $subject, $html, $text);
+}
+
+/**
  * Send a generic e-mail (internal helper).
  *
  * @param string $toEmail
