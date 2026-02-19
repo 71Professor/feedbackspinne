@@ -19,6 +19,24 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception as MailerException;
 
 /**
+ * Return the spider logo as an inline SVG string sized for email (80×80).
+ * Inline SVG is rendered by Gmail, Apple Mail, and Thunderbird without
+ * any external request or image-blocking issue.
+ */
+function getSpiderSvg(): string {
+    $path = __DIR__ . '/../spider1.svg';
+    if (!file_exists($path)) {
+        return '';
+    }
+    $svg = file_get_contents($path);
+    // Set display dimensions to 80×80 for the email logo
+    $svg = preg_replace('/(<svg[^>]*)\swidth="\d+"/',  '$1 width="80"',  $svg, 1);
+    $svg = preg_replace('/(<svg[^>]*)\sheight="\d+"/', '$1 height="80"', $svg, 1);
+    // Wrap in a block-level element so it flows like the old <img>
+    return '<div style="margin-bottom:16px;">' . $svg . '</div>';
+}
+
+/**
  * Create a configured PHPMailer instance.
  *
  * @return PHPMailer
@@ -61,6 +79,7 @@ function createMailer(): PHPMailer {
 function sendPasswordResetEmail(string $toEmail, string $toName, string $token): bool {
     $appUrl   = rtrim(getenv('APP_URL') ?: '', '/');
     $resetUrl = $appUrl . '/auth/?page=reset&token=' . urlencode($token);
+    $spiderSvg = getSpiderSvg();
 
     $subject = 'Passwort zurücksetzen – Feedbackspinne';
 
@@ -70,7 +89,7 @@ function sendPasswordResetEmail(string $toEmail, string $toName, string $token):
 <head><meta charset="UTF-8"><title>{$subject}</title></head>
 <body style="font-family:ui-sans-serif,system-ui,Arial,sans-serif;background:#f8fafc;margin:0;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:40px;">
-    <img src="cid:spider_logo" alt="Feedbackspinne" width="80" style="margin-bottom:16px;">
+    {$spiderSvg}
     <h2 style="margin:0 0 8px;color:#0f172a;">Passwort zurücksetzen</h2>
     <p style="color:#64748b;margin:0 0 24px;">Hallo {$toName},<br>
        du hast eine Anfrage zum Zurücksetzen deines Passworts gestellt.</p>
@@ -113,6 +132,7 @@ HTML;
 function sendVerificationEmail(string $toEmail, string $toName, string $token): bool {
     $appUrl     = rtrim(getenv('APP_URL') ?: '', '/');
     $verifyUrl  = $appUrl . '/auth/?verify_email=' . urlencode($token);
+    $spiderSvg  = getSpiderSvg();
 
     $subject = 'E-Mail-Adresse bestätigen – Feedbackspinne';
 
@@ -122,7 +142,7 @@ function sendVerificationEmail(string $toEmail, string $toName, string $token): 
 <head><meta charset="UTF-8"><title>{$subject}</title></head>
 <body style="font-family:ui-sans-serif,system-ui,Arial,sans-serif;background:#f8fafc;margin:0;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:40px;">
-    <img src="cid:spider_logo" alt="Feedbackspinne" width="80" style="margin-bottom:16px;">
+    {$spiderSvg}
     <h2 style="margin:0 0 8px;color:#0f172a;">E-Mail-Adresse bestätigen</h2>
     <p style="color:#64748b;margin:0 0 24px;">Hallo {$toName},<br>
        bitte bestätige deine E-Mail-Adresse, um deinen Account zu aktivieren.</p>
@@ -171,10 +191,6 @@ function sendMail(string $toEmail, string $toName, string $subject, string $html
         $mail->isHTML(true);
         $mail->Body    = $html;
         $mail->AltBody = $text;
-        $spiderPath = __DIR__ . '/../spider1.svg';
-        if (file_exists($spiderPath)) {
-            $mail->addEmbeddedImage($spiderPath, 'spider_logo', 'spider.svg', 'base64', 'image/svg+xml');
-        }
         $mail->send();
         return true;
     } catch (MailerException $e) {
