@@ -70,7 +70,7 @@ function sendPasswordResetEmail(string $toEmail, string $toName, string $token):
 <head><meta charset="UTF-8"><title>{$subject}</title></head>
 <body style="font-family:ui-sans-serif,system-ui,Arial,sans-serif;background:#f8fafc;margin:0;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:40px;">
-    <img src="{$appUrl}/spider3.svg" alt="Feedbackspinne" width="80" style="margin-bottom:16px;">
+    <img src="cid:spider_logo" alt="Feedbackspinne" width="80" style="margin-bottom:16px;">
     <h2 style="margin:0 0 8px;color:#0f172a;">Passwort zurücksetzen</h2>
     <p style="color:#64748b;margin:0 0 24px;">Hallo {$toName},<br>
        du hast eine Anfrage zum Zurücksetzen deines Passworts gestellt.</p>
@@ -122,7 +122,7 @@ function sendVerificationEmail(string $toEmail, string $toName, string $token): 
 <head><meta charset="UTF-8"><title>{$subject}</title></head>
 <body style="font-family:ui-sans-serif,system-ui,Arial,sans-serif;background:#f8fafc;margin:0;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:40px;">
-    <img src="{$appUrl}/spider3.svg" alt="Feedbackspinne" width="80" style="margin-bottom:16px;">
+    <img src="cid:spider_logo" alt="Feedbackspinne" width="80" style="margin-bottom:16px;">
     <h2 style="margin:0 0 8px;color:#0f172a;">E-Mail-Adresse bestätigen</h2>
     <p style="color:#64748b;margin:0 0 24px;">Hallo {$toName},<br>
        bitte bestätige deine E-Mail-Adresse, um deinen Account zu aktivieren.</p>
@@ -171,6 +171,10 @@ function sendMail(string $toEmail, string $toName, string $subject, string $html
         $mail->isHTML(true);
         $mail->Body    = $html;
         $mail->AltBody = $text;
+        $spiderPath = __DIR__ . '/../spider1.svg';
+        if (file_exists($spiderPath)) {
+            $mail->addEmbeddedImage($spiderPath, 'spider_logo', 'spider.svg', 'base64', 'image/svg+xml');
+        }
         $mail->send();
         return true;
     } catch (MailerException $e) {
