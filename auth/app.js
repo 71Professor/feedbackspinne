@@ -87,11 +87,15 @@ async function checkSession() {
   try {
     const params = new URLSearchParams(window.location.search);
     const data = await apiCall('me', null, 'GET');
-    if (data.success && params.get('view') !== 'register') {
+    if (data.success && params.get('view') === 'account') {
       // Bereits eingeloggt: Konto-Dashboard anzeigen
       currentUser = data.data.user;
       renderDashboard();
       showView('dashboard');
+    } else if (data.success && params.get('view') !== 'register') {
+      // Bereits eingeloggt: Weiterleitung zur Umfrage-Übersicht
+      window.location.href = '../admin/dashboard.php';
+      return;
     } else {
       // E-Mail-Verifikationslink verarbeiten
       const verifyToken = params.get('verify_email');
