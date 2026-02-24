@@ -88,8 +88,10 @@ async function checkSession() {
     const params = new URLSearchParams(window.location.search);
     const data = await apiCall('me', null, 'GET');
     if (data.success && params.get('view') !== 'register') {
-      // Bereits eingeloggt: direkt zum Admin-Bereich weiterleiten
-      window.location.href = '../admin/dashboard.php';
+      // Bereits eingeloggt: Konto-Dashboard anzeigen
+      currentUser = data.data.user;
+      renderDashboard();
+      showView('dashboard');
     } else {
       // E-Mail-Verifikationslink verarbeiten
       const verifyToken = params.get('verify_email');
