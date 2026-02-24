@@ -184,9 +184,22 @@ function handleLogin(array $body): void {
     $_SESSION['user_username']    = $user['username'];
     $_SESSION['user_email']       = $user['email'];
     $_SESSION['last_activity']    = time();
+    // admin_users-Eintrag suchen oder anlegen (FK-Kompatibilität für sessions.created_by_admin_id)
+    $stmtAdmin = $pdo->prepare("SELECT id FROM admin_users WHERE username = ?");
+    $stmtAdmin->execute([$user['username']]);
+    $linkedAdmin = $stmtAdmin->fetch();
+
+    if (!$linkedAdmin) {
+        $stmtInsert = $pdo->prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)");
+        $stmtInsert->execute([$user['username'], '!!auth_user!!']);
+        $adminId = (int)$pdo->lastInsertId();
+    } else {
+        $adminId = (int)$linkedAdmin['id'];
+    }
+
     // Admin-Session mitsetzen, damit admin/dashboard.php direkt erreichbar ist
     $_SESSION[ADMIN_SESSION_NAME] = true;
-    $_SESSION['admin_id']         = $user['id'];
+    $_SESSION['admin_id']         = $adminId;
 
     logSecurityEvent('login_success', "username={$user['username']}", (int)$user['id']);
     apiSuccess('Login erfolgreich.', [
@@ -458,6 +471,7 @@ function handleDeleteAccount(array $body): void {
     requireUserSession();
 
     $userId   = (int)$_SESSION['user_id'];
+    $adminId  = (int)$_SESSION['admin_id']; // admin_users.id (korrekt gesetzt seit Login-Fix)
     $password = $body['password'] ?? '';
 
     if (!$password) {
@@ -474,15 +488,14 @@ function handleDeleteAccount(array $body): void {
         apiError('Falsches Passwort.', 401);
     }
 
-    // Transaktional löschen: Submissions → Sessions → User
+    // Transaktional löschen: Sessions (CASCADE → Submissions) → admin_users → users
     $pdo->beginTransaction();
-    $pdo->prepare("
-        DELETE sub FROM submissions sub
-        INNER JOIN sessions s ON s.id = sub.session_id
-        WHERE s.created_by_admin_id = ?
-    ")->execute([$userId]);
+    // Submissions werden durch ON DELETE CASCADE der sessions-FK automatisch mitgelöscht
     $pdo->prepare("DELETE FROM sessions WHERE created_by_admin_id = ?")
-        ->execute([$userId]);
+        ->execute([$adminId]);
+    // admin_users-Platzhalter-Eintrag entfernen
+    $pdo->prepare("DELETE FROM admin_users WHERE id = ?")
+        ->execute([$adminId]);
     // ON DELETE CASCADE erledigt: password_reset_tokens, email_verification_tokens
     $pdo->prepare("DELETE FROM users WHERE id = ?")
         ->execute([$userId]);
