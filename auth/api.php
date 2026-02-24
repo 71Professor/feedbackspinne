@@ -44,6 +44,7 @@ if ($method === 'GET' && $action === 'me') {
         case 'change_password':           handleChangePassword($body);           break;
         case 'verifyEmail':               handleVerifyEmail($body);               break;
         case 'resendVerificationEmail':   handleResendVerificationEmail($body);   break;
+        case 'delete_account':            handleDeleteAccount($body);            break;
         default:
             apiError('Unbekannter Endpoint.', 404);
     }
@@ -444,6 +445,55 @@ function handleMe(): void {
             'email'    => $_SESSION['user_email'],
         ]
     ]);
+}
+
+// ── DELETE ACCOUNT ────────────────────────────────────────────────────────────
+function handleDeleteAccount(array $body): void {
+    // Rate-Limit: 3 Versuche pro 15 Minuten
+    if (!checkRateLimit('auth_delete_account', 3, 900)) {
+        logSecurityEvent('delete_account_rate_limit', 'Rate limit exceeded');
+        apiError('Zu viele Anfragen. Bitte warte kurz.', 429);
+    }
+
+    requireUserSession();
+
+    $userId   = (int)$_SESSION['user_id'];
+    $password = $body['password'] ?? '';
+
+    if (!$password) {
+        apiError('Passwort zur Bestätigung erforderlich.', 422);
+    }
+
+    $pdo  = getDB();
+    $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+
+    if (!$user || !password_verify($password, $user['password_hash'])) {
+        logSecurityEvent('delete_account_fail', 'wrong password', $userId);
+        apiError('Falsches Passwort.', 401);
+    }
+
+    // Transaktional löschen: Submissions → Sessions → User
+    $pdo->beginTransaction();
+    $pdo->prepare("
+        DELETE sub FROM submissions sub
+        INNER JOIN sessions s ON s.id = sub.session_id
+        WHERE s.created_by_admin_id = ?
+    ")->execute([$userId]);
+    $pdo->prepare("DELETE FROM sessions WHERE created_by_admin_id = ?")
+        ->execute([$userId]);
+    // ON DELETE CASCADE erledigt: password_reset_tokens, email_verification_tokens
+    $pdo->prepare("DELETE FROM users WHERE id = ?")
+        ->execute([$userId]);
+    $pdo->commit();
+
+    logSecurityEvent('delete_account_success', "user_id={$userId}", $userId);
+
+    session_unset();
+    session_destroy();
+
+    apiSuccess('Dein Konto wurde permanent gelöscht.');
 }
 
 // ════════════════════════════════════════════════════════════════════════════

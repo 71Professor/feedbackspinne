@@ -27,6 +27,7 @@ const views = {
   reset:          document.getElementById('view-reset'),
   changePassword: document.getElementById('view-change-password'),
   dashboard:      document.getElementById('view-dashboard'),
+  deleteAccount:  document.getElementById('view-delete-account'),
 };
 
 function showView(name) {
@@ -291,6 +292,31 @@ document.getElementById('form-change-password').addEventListener('submit', async
 
 document.getElementById('change-new-password').addEventListener('input', function () {
   updateMeter(this.value, 'change-pw-fill');
+});
+
+// ── DELETE ACCOUNT ────────────────────────────────────────────────────────────
+document.getElementById('form-delete-account').addEventListener('submit', async e => {
+  e.preventDefault();
+  clearAlert('delete-alert');
+
+  if (!confirm('Bist du sicher? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
+
+  const btn = e.target.querySelector('button[type=submit]');
+  setLoading(btn, true);
+
+  const res = await apiCall('delete_account', {
+    password: e.target.password.value,
+  });
+
+  setLoading(btn, false);
+  if (res.success) {
+    showAlert('delete-alert', res.message, 'success');
+    currentUser = null;
+    e.target.reset();
+    setTimeout(() => showView('login'), 2500);
+  } else {
+    showAlert('delete-alert', res.message, 'error');
+  }
 });
 
 // ── Navigation links (inline buttons acting as links) ─────────────────────────

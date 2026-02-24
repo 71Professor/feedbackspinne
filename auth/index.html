@@ -212,11 +212,41 @@
     <div style="display:flex;flex-direction:column;gap:12px;">
       <button class="btn btn-ghost" data-goto="changePassword">🔑 Passwort ändern</button>
       <button id="btn-logout" class="btn btn-primary">Abmelden</button>
+      <button class="btn btn-ghost" style="color:#dc2626;border-color:#dc2626;" data-goto="deleteAccount">Konto löschen</button>
     </div>
 
     <div class="divider">oder</div>
 
     <a href="../" class="btn btn-ghost">← Zur Feedbackspinne</a>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       VIEW: DELETE ACCOUNT (requires login)
+  ════════════════════════════════════════════ -->
+  <div id="view-delete-account" class="card auth-view">
+    <h2>Konto löschen</h2>
+    <p class="subtitle" style="color:#dc2626;">
+      Diese Aktion ist unwiderruflich. Alle deine Daten, Sessions und
+      Feedback-Einreichungen werden permanent gelöscht.
+    </p>
+
+    <div id="delete-alert" class="alert"></div>
+
+    <form id="form-delete-account" novalidate>
+      <div class="form-group">
+        <label for="delete-password">Passwort zur Bestätigung</label>
+        <input type="password" id="delete-password" name="password"
+               autocomplete="current-password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-primary"
+              style="background:#dc2626;border-color:#dc2626;">
+        Konto unwiderruflich löschen
+      </button>
+    </form>
+
+    <div class="nav-links">
+      <button class="nav-link" data-goto="dashboard">← Zurück</button>
+    </div>
   </div>
 
 </div><!-- /.auth-wrap -->
