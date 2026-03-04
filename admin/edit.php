@@ -219,6 +219,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cursor: pointer;
             margin-bottom: 24px;
         }
+        .textfield-section {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-textfield {
+            padding: 6px 12px;
+            background: rgba(15,23,42,.04);
+            color: var(--muted);
+            border: 1px dashed rgba(15,23,42,.2);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-textfield:hover {
+            background: rgba(122,184,0,.08);
+            border-color: rgba(122,184,0,.4);
+            color: #0b2a00;
+        }
+        .btn-textfield-active {
+            background: rgba(122,184,0,.12);
+            color: #1a4500;
+            border: 1px solid rgba(122,184,0,.5);
+        }
+        .textfield-hint {
+            font-size: 12px;
+            color: var(--muted);
+        }
         .btn-primary {
             width: 100%;
             padding: 14px 20px;
@@ -446,24 +478,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         let dimensionCount = 0;
         const existingDimensions = <?php echo json_encode($existingDimensions); ?>;
 
-        function addDimension(name = '', left = '', right = '') {
+        function escapeAttr(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function addDimension(name = '', left = '', right = '', hasTextfield = false) {
             dimensionCount++;
+            const dimId = dimensionCount;
             const container = document.getElementById('dimensions');
             const div = document.createElement('div');
             div.className = 'dimension-item';
-            div.id = `dim-${dimensionCount}`;
+            div.id = `dim-${dimId}`;
             div.innerHTML = `
                 <div class="dimension-header">
-                    <span class="dimension-number">Dimension ${dimensionCount}</span>
-                    <button type="button" class="btn-remove" onclick="removeDimension(${dimensionCount})">✕ Entfernen</button>
+                    <span class="dimension-number">Dimension ${dimId}</span>
+                    <button type="button" class="btn-remove" onclick="removeDimension(${dimId})">✕ Entfernen</button>
                 </div>
-                <input type="text" name="dimension_names[]" placeholder="Name der Dimension" value="${name}" required>
+                <input type="text" name="dimension_names[]" placeholder="Name der Dimension" value="${escapeAttr(name)}" required maxlength="100">
                 <div class="poles">
-                    <input type="text" name="dimension_lefts[]" placeholder="Linker Pol" value="${left}">
-                    <input type="text" name="dimension_rights[]" placeholder="Rechter Pol" value="${right}">
+                    <input type="text" name="dimension_lefts[]" placeholder="Linker Pol" value="${escapeAttr(left)}" maxlength="100">
+                    <input type="text" name="dimension_rights[]" placeholder="Rechter Pol" value="${escapeAttr(right)}" maxlength="100">
+                </div>
+                <div class="textfield-section">
+                    <input type="hidden" name="dimension_has_textfield[]" id="dim-tf-val-${dimId}" value="${hasTextfield ? '1' : '0'}">
+                    <button type="button"
+                            class="btn-textfield${hasTextfield ? ' btn-textfield-active' : ''}"
+                            id="dim-tf-btn-${dimId}"
+                            onclick="toggleTextfield(${dimId})">
+                        ${hasTextfield ? '✓ Textfeld aktiv' : '+ Textfeld hinzufügen'}
+                    </button>
+                    <span class="textfield-hint" id="dim-tf-hint-${dimId}"${hasTextfield ? '' : ' style="display:none"'}>
+                        Teilnehmende können einen Kommentar eingeben (max. 200 Zeichen)
+                    </span>
                 </div>
             `;
             container.appendChild(div);
+        }
+
+        function toggleTextfield(id) {
+            const valInput = document.getElementById(`dim-tf-val-${id}`);
+            const btn = document.getElementById(`dim-tf-btn-${id}`);
+            const hint = document.getElementById(`dim-tf-hint-${id}`);
+            const isActive = valInput.value === '1';
+            if (isActive) {
+                valInput.value = '0';
+                btn.classList.remove('btn-textfield-active');
+                btn.textContent = '+ Textfeld hinzufügen';
+                hint.style.display = 'none';
+            } else {
+                valInput.value = '1';
+                btn.classList.add('btn-textfield-active');
+                btn.textContent = '✓ Textfeld aktiv';
+                hint.style.display = 'inline';
+            }
         }
 
         function removeDimension(id) {
@@ -481,9 +553,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
 
-        // Vorhandene Dimensionen laden
+        // Vorhandene Dimensionen laden (inkl. has_textfield)
         existingDimensions.forEach(dim => {
-            addDimension(dim.name, dim.left, dim.right);
+            addDimension(dim.name, dim.left, dim.right, !!dim.has_textfield);
         });
 
         // Farbpicker-Funktionalität

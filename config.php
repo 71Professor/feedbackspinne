@@ -547,6 +547,7 @@ function validateSessionData($postData) {
     $dimensionNames = $postData['dimension_names'] ?? [];
     $dimensionLefts = $postData['dimension_lefts'] ?? [];
     $dimensionRights = $postData['dimension_rights'] ?? [];
+    $dimensionHasTextfield = $postData['dimension_has_textfield'] ?? [];
 
     if (!is_array($dimensionNames) || count($dimensionNames) < 3) {
         $errors[] = 'Mindestens 3 Dimensionen erforderlich.';
@@ -571,11 +572,15 @@ function validateSessionData($postData) {
                 $errors[] = $rightResult['error'];
             }
 
+            // Textfeld-Option: nur "1" gilt als aktiviert, alles andere als deaktiviert
+            $hasTextfield = isset($dimensionHasTextfield[$i]) && $dimensionHasTextfield[$i] === '1';
+
             if ($nameResult['valid'] && $leftResult['valid'] && $rightResult['valid']) {
                 $dimensions[] = [
                     'name' => $nameResult['value'],
                     'left' => $leftResult['value'],
-                    'right' => $rightResult['value']
+                    'right' => $rightResult['value'],
+                    'has_textfield' => $hasTextfield,
                 ];
             }
         }

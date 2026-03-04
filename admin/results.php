@@ -53,8 +53,8 @@ $chartColorDark = darkenColor($chartColor);
 
 // Alle Submissions für diese Session abrufen
 $stmt = $pdo->prepare("
-    SELECT participant_name, `values`, submitted_at 
-    FROM submissions 
+    SELECT participant_name, `values`, text_values, submitted_at
+    FROM submissions
     WHERE session_id = ?
     ORDER BY submitted_at DESC
 ");
@@ -65,16 +65,31 @@ $submissions = $stmt->fetchAll();
 $averages = [];
 $counts = count($submissions);
 
+// Freitext-Kommentare je Dimension sammeln
+$textComments = array_fill(0, count($dimensions), []);
+
 if ($counts > 0) {
     $sums = array_fill(0, count($dimensions), 0);
-    
+
     foreach ($submissions as $sub) {
         $values = json_decode($sub['values'], true);
         foreach ($values as $i => $val) {
             $sums[$i] += $val;
         }
+
+        // Freitexte auslesen (text_values kann NULL sein bei älteren Submissions)
+        if (!empty($sub['text_values'])) {
+            $texts = json_decode($sub['text_values'], true);
+            if (is_array($texts)) {
+                foreach ($texts as $i => $text) {
+                    if ($text !== '' && $text !== null) {
+                        $textComments[$i][] = $text;
+                    }
+                }
+            }
+        }
     }
-    
+
     foreach ($sums as $i => $sum) {
         $averages[$i] = round($sum / $counts, 1);
     }
@@ -270,6 +285,27 @@ if ($counts > 0) {
             gap: 10px;
             margin-top: 20px;
         }
+        .text-comments {
+            margin-top: 12px;
+        }
+        .text-comments-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 8px;
+        }
+        .text-comment-item {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
         @media (max-width: 968px) {
             .grid {
                 grid-template-columns: 1fr;
@@ -343,6 +379,18 @@ if ($counts > 0) {
                                     <span><?php echo htmlspecialchars($dim['left']); ?></span>
                                     <span><?php echo htmlspecialchars($dim['right']); ?></span>
                                 </div>
+                                <?php if (!empty($dim['has_textfield']) && !empty($textComments[$i])): ?>
+                                    <div class="text-comments">
+                                        <div class="text-comments-title">
+                                            Kommentare (<?php echo count($textComments[$i]); ?>)
+                                        </div>
+                                        <?php foreach ($textComments[$i] as $comment): ?>
+                                            <div class="text-comment-item">
+                                                <?php echo htmlspecialchars($comment); ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
                     </div>

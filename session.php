@@ -71,28 +71,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
             $participantName = $nameResult['value'];
             $values = $_POST['values'] ?? [];
 
-            // Validierung
+            // Validierung der Slider-Werte
             if (count($values) === count($dimensions)) {
-            $validValues = true;
-            foreach ($values as $val) {
-                if (!is_numeric($val) || $val < $session['scale_min'] || $val > $session['scale_max']) {
-                    $validValues = false;
-                    break;
+                $validValues = true;
+                foreach ($values as $val) {
+                    if (!is_numeric($val) || $val < $session['scale_min'] || $val > $session['scale_max']) {
+                        $validValues = false;
+                        break;
+                    }
                 }
-            }
 
-            if ($validValues) {
-                try {
-                    $stmt = $pdo->prepare("INSERT INTO submissions (session_id, participant_name, `values`) VALUES (?, ?, ?)");
-                    $stmt->execute([
-                        $session['id'],
-                        $participantName,
-                        json_encode(array_map('intval', $values))
-                    ]);
-                    $success = true;
-                } catch (Exception $e) {
-                    $error = 'Fehler beim Speichern. Bitte versuche es erneut.';
+                // Freitext-Felder validieren
+                $textValues = [];
+                $textError = '';
+                if ($validValues) {
+                    $rawTexts = $_POST['dimension_texts'] ?? [];
+                    foreach ($dimensions as $i => $dim) {
+                        if (!empty($dim['has_textfield'])) {
+                            $rawText = $rawTexts[$i] ?? '';
+                            // HTML-Tags entfernen (Schutz gegen Injection)
+                            $rawText = strip_tags($rawText);
+                            $textResult = validateText($rawText, 200, true, 'Kommentar (Dimension ' . ($i + 1) . ')');
+                            if (!$textResult['valid']) {
+                                $textError = $textResult['error'];
+                                break;
+                            }
+                            $textValues[$i] = $textResult['value'];
+                        } else {
+                            $textValues[$i] = '';
+                        }
+                    }
                 }
+
+                if (!empty($textError)) {
+                    $error = $textError;
+                } elseif ($validValues) {
+                    try {
+                        $stmt = $pdo->prepare("INSERT INTO submissions (session_id, participant_name, `values`, text_values) VALUES (?, ?, ?, ?)");
+                        $stmt->execute([
+                            $session['id'],
+                            $participantName,
+                            json_encode(array_map('intval', $values)),
+                            json_encode($textValues, JSON_UNESCAPED_UNICODE)
+                        ]);
+                        $success = true;
+                    } catch (Exception $e) {
+                        $error = 'Fehler beim Speichern. Bitte versuche es erneut.';
+                    }
                 } else {
                     $error = 'Ungültige Werte eingegeben.';
                 }
@@ -330,6 +355,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
             height: 400px;
             position: relative;
         }
+        .dimension-textfield {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--border);
+        }
+        .dimension-textfield label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .dimension-textfield textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            resize: vertical;
+            min-height: 64px;
+            max-height: 200px;
+            color: var(--text);
+        }
+        .dimension-textfield textarea:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.18);
+        }
+        .char-counter {
+            font-size: 11px;
+            color: var(--muted);
+            text-align: right;
+            margin-top: 4px;
+        }
+        .char-counter.near-limit { color: #b45309; }
+        .char-counter.at-limit   { color: #b91c1c; }
         .page-footer {
             text-align: center;
             margin-top: 40px;
@@ -414,6 +476,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
                                 <?php endfor; ?>
                             </div>
                         </div>
+
+                        <?php if (!empty($dim['has_textfield'])): ?>
+                            <div class="dimension-textfield">
+                                <label for="dim-text-<?php echo $index; ?>">Kommentar (optional, max. 200 Zeichen)</label>
+                                <textarea
+                                    id="dim-text-<?php echo $index; ?>"
+                                    name="dimension_texts[<?php echo $index; ?>]"
+                                    maxlength="200"
+                                    placeholder="Ihr Kommentar zu dieser Dimension …"
+                                    data-counter="char-counter-<?php echo $index; ?>"
+                                ></textarea>
+                                <div class="char-counter" id="char-counter-<?php echo $index; ?>">0 / 200</div>
+                            </div>
+                        <?php endif; ?>
                     <?php endforeach; ?>
 
                     <button type="submit">Werte absenden</button>
@@ -503,6 +579,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
             previewChart.data.datasets[0].data = values;
             previewChart.update();
         }
+
+        // Zeichenzähler für Freitext-Felder
+        document.querySelectorAll('textarea[data-counter]').forEach(function(ta) {
+            const counterId = ta.getAttribute('data-counter');
+            const counter = document.getElementById(counterId);
+            if (!counter) return;
+            const maxLen = parseInt(ta.getAttribute('maxlength')) || 200;
+
+            ta.addEventListener('input', function() {
+                const len = ta.value.length;
+                counter.textContent = len + ' / ' + maxLen;
+                counter.classList.toggle('near-limit', len >= maxLen * 0.85 && len < maxLen);
+                counter.classList.toggle('at-limit', len >= maxLen);
+            });
+        });
     </script>
 
     <div class="page-footer">
