@@ -510,6 +510,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
                     <li>geben den Session Code ein, z.B. 1678</li>
                     <li>geben optional ihren Namen an</li>
                     <li>nehmen die Einstellungen vor</li>
+                    <li>geben Feedback, wo möglich</li>
                     <li>senden die Werte ab</li>
                 </ul>
 
