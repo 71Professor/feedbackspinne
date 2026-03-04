@@ -497,8 +497,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
                     <li>gehen zu <a href="https://feedbackspinne.de/admin" target="_blank">https://feedbackspinne.de/auth</a></li>
                     <li>registrieren sich und loggen sich ein mit Benutzername und Passwort ein.</li>
                     <li>klicken auf "Neue Session"</li>
-                    <li>wählen Farbe und Skala</li>
+                    <li>wählen Titel, Farbe und Skala</li>
                     <li>tippen die Dimensionen und Pole ein</li>
+                    <li>Wenn gewünscht, aktivieren der Möglichkeit, Textfeedback zuzulassen
                     <li>speichern das Feedback und erhalten eine vierstelligen Code</li>
                     <li>geben den Teilnehmenden den vierstelligen Feedback-Code</li>
                 </ul>
