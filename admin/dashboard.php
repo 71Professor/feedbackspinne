@@ -499,7 +499,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['copy_session'])) {
                     <li>klicken auf "Neue Session"</li>
                     <li>wählen Titel, Farbe und Skala</li>
                     <li>tippen die Dimensionen und Pole ein</li>
-                    <li>Wenn gewünscht, aktivieren der Möglichkeit, Textfeedback zuzulassen
+                    <li>aktivieren der Möglichkeit, Textfeedback zuzulassen, falls gewünscht</li>
                     <li>speichern das Feedback und erhalten eine vierstelligen Code</li>
                     <li>geben den Teilnehmenden den vierstelligen Feedback-Code</li>
                 </ul>
