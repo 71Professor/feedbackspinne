@@ -95,12 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
         .form-group {
             margin-bottom: 20px;
         }
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
         input[type="text"] {
             width: 100%;
             padding: 14px 16px;
@@ -173,21 +167,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
         .admin-link a:hover {
             color: var(--text);
         }
+        .logo-wrapper {
+            position: relative;
+            width: 120px;
+            margin: 0 auto 20px auto;
+        }
         .logo {
             display: block;
             width: 120px;
             height: 120px;
-            margin: 0 auto 20px auto;
+        }
+        .info-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--green);
+            color: white;
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+        .info-btn:hover {
+            background: var(--green-2);
+        }
+        .info-popup {
+            display: none;
+            position: absolute;
+            top: 32px;
+            right: -8px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(15,23,42,.12);
+            padding: 14px 16px;
+            width: 260px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text);
+            z-index: 100;
+            text-align: left;
+        }
+        .info-popup.open {
+            display: block;
+        }
+        .info-popup strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--green-2);
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <img src="spider3.svg" alt="Feedbackspinne Logo" class="logo">
+            <div class="logo-wrapper">
+                <img src="spider3.svg" alt="Feedbackspinne Logo" class="logo">
+                <button class="info-btn" id="infoBtn" aria-label="Test-Zugangsdaten anzeigen">?</button>
+                <div class="info-popup" id="infoPopup">
+                    <strong>Nur ausprobieren?</strong>
+                    Test-Session: <strong>9732</strong><br><br>
+                    <strong>Selbst erstellen?</strong>
+                    Username: <strong>tester</strong><br>
+                    Passwort: <strong>Thekla26!</strong>
+                </div>
+            </div>
             <h1>Feedback und Reflexion</h1>
-            <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen. Nur ausprobieren? Test-Session: 9732</p>
-            <p class="subtitle">Selbst mal erstellen? Username: tester, Passwort: Thekla26!</p>
+            <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen.</p>
             
             <?php if ($error): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
@@ -228,6 +290,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
         const codeInput = document.getElementById('code');
         codeInput.addEventListener('input', function(e) {
             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+        });
+
+        // Info Popup Toggle
+        const infoBtn = document.getElementById('infoBtn');
+        const infoPopup = document.getElementById('infoPopup');
+        infoBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            infoPopup.classList.toggle('open');
+        });
+        document.addEventListener('click', function() {
+            infoPopup.classList.remove('open');
         });
     </script>
 </body>
