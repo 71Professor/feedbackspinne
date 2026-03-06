@@ -21,7 +21,17 @@
        VIEW: LOGIN
   ════════════════════════════════════════════ -->
   <div id="view-login" class="card auth-view active">
-    <h2>Anmelden</h2>
+    <div class="h2-wrapper">
+      <h2>Anmelden</h2>
+      <button class="info-btn" id="infoBtn" aria-label="Test-Zugangsdaten anzeigen">?</button>
+      <div class="info-popup" id="infoPopup">
+        <strong>Nur ausprobieren?</strong>
+        Test-Session: <strong>9732</strong><br><br>
+        <strong>Selbst erstellen?</strong>
+        Username: <strong>tester</strong><br>
+        Passwort: <strong>Thekla26!</strong>
+      </div>
+    </div>
     <p class="subtitle">Melde dich mit deinem Konto an.</p>
 
     <div id="login-alert" class="alert"></div>
@@ -252,5 +262,16 @@
 </div><!-- /.auth-wrap -->
 
 <script src="app.js"></script>
+<script>
+  const infoBtn = document.getElementById('infoBtn');
+  const infoPopup = document.getElementById('infoPopup');
+  infoBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    infoPopup.classList.toggle('open');
+  });
+  document.addEventListener('click', function() {
+    infoPopup.classList.remove('open');
+  });
+</script>
 </body>
 </html>

@@ -243,6 +243,56 @@ input::placeholder { color: #b0bec5; }
   content: ''; flex: 1; border-top: 1px solid var(--border);
 }
 
+/* ── Info Popup ── */
+.h2-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.h2-wrapper h2 { margin-bottom: 0; }
+.info-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background var(--trans);
+}
+.info-btn:hover { background: var(--green-2); }
+.info-popup {
+  display: none;
+  position: absolute;
+  top: 30px;
+  left: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15,23,42,.12);
+  padding: 14px 16px;
+  width: 260px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  z-index: 100;
+}
+.info-popup.open { display: block; }
+.info-popup strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--green-2);
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .card { padding: 28px 20px; }
