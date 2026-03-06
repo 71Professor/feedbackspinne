@@ -273,7 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
             </form>
             
             <div class="info">
-                💡 <strong>Hinweis:</strong> Den Session-Code erhältst du von deinem Workshop-Leiter.
+                💡 <strong>Hinweis:</strong> Den Session-Code erhältst du von deiner Workshop-Leitung.
             </div>
             
             <div class="admin-link">
