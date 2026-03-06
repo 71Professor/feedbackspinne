@@ -321,6 +321,10 @@ function handleResetPassword(array $body): void {
 function handleChangePassword(array $body): void {
     requireUserSession();
 
+    if ($_SESSION['user_username'] === 'tester') {
+        apiError('Das Tester-Konto kann nicht geändert werden.', 403);
+    }
+
     $userId      = (int)$_SESSION['user_id'];
     $oldPassword = $body['old_password'] ?? '';
     $newPassword = $body['new_password'] ?? '';
@@ -469,6 +473,10 @@ function handleDeleteAccount(array $body): void {
     }
 
     requireUserSession();
+
+    if ($_SESSION['user_username'] === 'tester') {
+        apiError('Das Tester-Konto kann nicht gelöscht werden.', 403);
+    }
 
     $userId   = (int)$_SESSION['user_id'];
     $adminId  = (int)$_SESSION['admin_id']; // admin_users.id (korrekt gesetzt seit Login-Fix)

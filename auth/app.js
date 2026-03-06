@@ -127,6 +127,10 @@ async function checkSession() {
 function renderDashboard() {
   document.getElementById('dash-username').textContent = currentUser.username;
   document.getElementById('dash-email').textContent    = currentUser.email;
+
+  const isTester = currentUser.username === 'tester';
+  document.querySelector('[data-goto="changePassword"]').style.display = isTester ? 'none' : '';
+  document.querySelector('[data-goto="deleteAccount"]').style.display  = isTester ? 'none' : '';
 }
 
 // ── REGISTER ──────────────────────────────────────────────────────────────────
