@@ -90,8 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
             color: var(--muted);
             text-align: center;
             margin-bottom: 32px;
-            line-height: 1.2;
-            font-weight: bold;
+            line-height: 1.5;
         }
         .form-group {
             margin-bottom: 20px;
@@ -250,17 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
                 </div>
             </div>
             <h1>Feedback und Reflexion</h1>
-<<<<<<< Updated upstream
             <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen.</p>
-=======
-<<<<<<< HEAD
-            <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen.
-            <p class="subtitle">Nur ausprobieren? Test-Session: 9732</p>
-            <p class="subtitle">Selbst mal erstellen? Username: tester, Passwort: Thekla26!</p>
-=======
-            <p class="subtitle">Gib den 4-stelligen Session-Code ein, um teilzunehmen.</p>
->>>>>>> 991012214b13b281bd06d52a64d00b653cdc39bd
->>>>>>> Stashed changes
             
             <?php if ($error): ?>
                 <div class="error"><?php echo htmlspecialchars($error); ?></div>
