@@ -153,7 +153,7 @@ input::placeholder { color: #b0bec5; }
 .btn-ghost:hover:not(:disabled) { background: var(--green-bg); }
 
 /* ── Alerts ── */
-..alert {
+.alert {
   padding: 18px 22px !important;
   border-radius: 17px;
   font-size: 16px;
