@@ -154,13 +154,13 @@ input::placeholder { color: #b0bec5; }
 
 /* ── Alerts ── */
 ..alert {
-  padding: 18px 22px;
+  padding: 18px 22px !important;
   border-radius: 17px;
   font-size: 16px;
   font-weight: 600;
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   line-height: 1.55;
-  margin-bottom: 28px;
+  margin-bottom: 28px !important;
   display: none;
 }
 .alert.show { display: block; }
