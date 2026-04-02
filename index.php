@@ -45,6 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['code'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kollaboratives Reflexionstool</title>
+    <meta name="description" content="Erstelle interaktive Feedbackspinnen für Unterricht, Workshops oder Teams. Kostenlos und ohne Anmeldung.">
+  <meta name="keywords" content="Feedbackspinne, Zielscheibe Feedback, Unterricht Feedback Tool">
+  <meta name="robots" content="index, follow">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
         :root {
