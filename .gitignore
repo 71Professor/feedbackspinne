@@ -33,3 +33,6 @@ composer.lock
 
 # Auth – Logs
 auth/security.log
+
+# Git Worktrees
+.worktrees/
