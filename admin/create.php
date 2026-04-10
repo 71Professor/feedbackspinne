@@ -24,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $code = generateSessionCode();
 
                 $stmt = $pdo->prepare("
-                    INSERT INTO sessions (code, title, description, scale_min, scale_max, chart_color, dimensions, is_active, created_by_admin_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+                    INSERT INTO sessions (code, title, description, scale_min, scale_max, chart_color, dimensions, is_active, created_by_admin_id, show_results_to_participants)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
                 ");
                 $stmt->execute([
                     $code,
@@ -35,7 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['scale_max'],
                     $data['chart_color'],
                     json_encode($data['dimensions'], JSON_UNESCAPED_UNICODE),
-                    $_SESSION['admin_id']
+                    $_SESSION['admin_id'],
+                    $data['show_results_to_participants'],
                 ]);
 
                 $success = true;
@@ -321,6 +322,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-color: #0f172a;
             box-shadow: 0 0 0 2px white, 0 0 0 4px #0f172a;
         }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-weight: normal;
+            font-size: 14px;
+            color: var(--text);
+            user-select: none;
+        }
+        .toggle-label input[type="checkbox"] {
+            width: 0;
+            height: 0;
+            opacity: 0;
+            position: absolute;
+        }
+        .toggle-track {
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 999px;
+            position: relative;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .toggle-track::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 1px 4px rgba(15,23,42,.2);
+            transition: left 0.2s;
+        }
+        .toggle-label input:checked + .toggle-track {
+            background: var(--green);
+        }
+        .toggle-label input:checked + .toggle-track::after {
+            left: 23px;
+        }
     </style>
 </head>
 <body>
@@ -411,7 +456,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <button type="button" class="btn-add" onclick="addDimension()">+ Dimension hinzufügen</button>
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label>Ergebnisse für Teilnehmende</label>
+                        <label class="toggle-label">
+                            <input type="checkbox" name="show_results_to_participants" value="1">
+                            <span class="toggle-track"></span>
+                            Teilnehmende sehen nach dem Absenden das aggregierte Gesamtergebnis aller Einreichungen
+                        </label>
+                    </div>
+
                     <button type="submit" class="btn-primary">Session erstellen</button>
                 </form>
             </div>
