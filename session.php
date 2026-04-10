@@ -127,6 +127,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
         }
     }
 }
+
+// Gesamtergebnis laden (nur wenn Teilnehmende es sehen dürfen)
+$resultAverages = [];
+$resultCount = 0;
+if ($success && !empty($session['show_results_to_participants'])) {
+    $stmt = $pdo->prepare("SELECT `values` FROM submissions WHERE session_id = ?");
+    $stmt->execute([$session['id']]);
+    $allSubmissions = $stmt->fetchAll();
+    $resultCount = count($allSubmissions);
+    if ($resultCount > 0) {
+        $sums = array_fill(0, count($dimensions), 0);
+        foreach ($allSubmissions as $sub) {
+            $vals = json_decode($sub['values'], true);
+            foreach ($vals as $i => $val) {
+                $sums[$i] += $val;
+            }
+        }
+        foreach ($sums as $i => $sum) {
+            $resultAverages[$i] = round($sum / $resultCount, 1);
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -430,8 +452,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
 
         <?php if ($success): ?>
             <div class="success">
-                ✅ <strong>Vielen Dank!</strong> Deine Werte wurden erfolgreich gespeichert. 
+                ✅ <strong>Vielen Dank!</strong> Deine Werte wurden erfolgreich gespeichert.
                 Der Workshop-Leiter kann nun die aggregierten Ergebnisse aller Teilnehmenden einsehen.
+            </div>
+        <?php endif; ?>
+
+        <?php if ($success && !empty($session['show_results_to_participants']) && $resultCount > 0): ?>
+            <div class="card" style="margin-top: 20px;">
+                <h2 style="margin: 0 0 20px; font-size: 18px;">
+                    Gesamtergebnis aller <?php echo $resultCount; ?> Teilnehmenden
+                </h2>
+                <div style="width: 100%; height: 360px; position: relative;">
+                    <canvas id="resultsChart"></canvas>
+                </div>
+                <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
+                    <?php foreach ($dimensions as $i => $dim): ?>
+                        <div style="border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: #fafafa;">
+                            <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">
+                                <?php echo htmlspecialchars($dim['name']); ?>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+                                <span style="background: var(--green); color: white; padding: 6px 12px; border-radius: 999px; font-weight: 800; font-size: 18px;">
+                                    ⌀ <?php echo number_format($resultAverages[$i], 1, ',', '.'); ?>
+                                </span>
+                                <span style="font-size: 13px; color: var(--muted);">von <?php echo $session['scale_max']; ?></span>
+                            </div>
+                            <?php if (!empty($dim['left']) || !empty($dim['right'])): ?>
+                                <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted);">
+                                    <span><?php echo htmlspecialchars($dim['left']); ?></span>
+                                    <span><?php echo htmlspecialchars($dim['right']); ?></span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         <?php endif; ?>
 
@@ -594,6 +648,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['values'])) {
                 counter.classList.toggle('at-limit', len >= maxLen);
             });
         });
+
+        <?php if ($success && !empty($session['show_results_to_participants']) && $resultCount > 0): ?>
+        const resultsCtx = document.getElementById('resultsChart').getContext('2d');
+        new Chart(resultsCtx, {
+            type: 'radar',
+            data: {
+                labels: <?php echo json_encode(array_column($dimensions, 'name')); ?>,
+                datasets: [{
+                    label: 'Durchschnitt',
+                    data: <?php echo json_encode(array_values($resultAverages)); ?>,
+                    backgroundColor: 'rgba(<?php echo "{$rgb['r']},{$rgb['g']},{$rgb['b']}"; ?>,.18)',
+                    borderColor: '<?php echo $chartColor; ?>',
+                    borderWidth: 3,
+                    pointBackgroundColor: '<?php echo $chartColor; ?>',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2.5,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: 'Basierend auf <?php echo $resultCount; ?> Teilnehmer<?php echo $resultCount !== 1 ? "n" : ""; ?>',
+                        font: { size: 14, weight: '600' },
+                        color: '#64748b'
+                    }
+                },
+                scales: {
+                    r: {
+                        min: <?php echo $session['scale_min']; ?>,
+                        max: <?php echo $session['scale_max']; ?>,
+                        ticks: {
+                            stepSize: 1,
+                            color: '#64748b',
+                            font: { size: 12, weight: '700' },
+                            backdropColor: 'rgba(255,255,255,.85)',
+                        },
+                        grid: { color: '#e5e7eb' },
+                        angleLines: { color: '#e5e7eb' },
+                        pointLabels: {
+                            color: '#0f172a',
+                            font: { size: 13, weight: '800' },
+                        },
+                    },
+                },
+            },
+        });
+        <?php endif; ?>
     </script>
 
     <div class="page-footer">
