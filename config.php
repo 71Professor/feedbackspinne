@@ -592,6 +592,9 @@ function validateSessionData($postData) {
         }
     }
 
+    // show_results_to_participants: Checkbox — fehlendes POST-Feld = 0
+    $validatedData['show_results_to_participants'] = isset($postData['show_results_to_participants']) ? 1 : 0;
+
     // Return result
     if (!empty($errors)) {
         return [
